@@ -5,7 +5,6 @@ import(
 	"crypto/sha256"
 	"encoding/json"
 	"encoding/hex"
-	"strings"
 
 	"github.com/gocraft/web"
 	"github.com/pkg/errors"
@@ -48,11 +47,10 @@ func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	isSupplier := false
-	path := (strings.Split(req.RoutePath(), "/"))
-	companyType := path[len(path) - 1]
-	if companyType == "supplier" {
+	typeOfCompany := req.PathParams["typeOfCompany"]
+	if typeOfCompany == "supplier" {
 		isSupplier = true
-	} else if companyType != "buyer" {
+	} else if typeOfCompany != "buyer" {
 		c.Error = errors.Wrap(err, "register with bad company type")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
