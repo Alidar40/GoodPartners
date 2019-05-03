@@ -34,6 +34,8 @@ func main() {
 	apiRouter.Post("/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
 	apiRouter.Get("/supplier/pricelist/:company_id", (*Context).GetPricelistById)
 	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
+	apiRouter.Post("/invitations/partnership/invite", (*Context).InviteCompany)
+	apiRouter.Post("/invitations/partnership/answer", (*Context).AnswerInvitation)
 
 	rootRouter.Get("/", (*Context).HomePage)
 

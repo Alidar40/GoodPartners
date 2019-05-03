@@ -42,6 +42,18 @@ type PriceListEditForm struct {
 	Delete	[]PriceListEntry	`json:"delete,omitpemty"`
 }
 
+type InvitationForm struct {
+	CompanyId	string	`json:"companyId"`
+	InvitedCompanyId	string	`json:"invitedCompanyId"`
+	Message		string	`json:"message,omitempty"`
+}
+
+type InvitationAnswerForm struct {
+	CompanyId	string	`json:"companyId"`
+	InvitationId	string	`json:"invitationId"`
+	Answer	string	`json:"answer"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -58,7 +70,7 @@ func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	if typeOfCompany == "supplier" {
 		isSupplier = true
 	} else if typeOfCompany != "buyer" {
-		c.Error = errors.Wrap(err, "register with bad company type")
+		c.Error = errors.Wrap(errors.New("company can be either of type \"supplier\" or \"buyer\""), "register with bad company type")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -172,6 +184,11 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&plef)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing EditPricelistForm")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	for _, i := range plef.Insert {
 		_, err = db.Exec(`INSERT INTO pricelist (company_id, sku, name, units, price, category, description) VALUES ($1, $2, $3, $4, $5, $6, $7);`, plef.CompanyId, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description)
@@ -191,7 +208,7 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 				      price=$4,
 				      category=$5,
 				      description=$6
-				  WHERE company_id=$7`, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description, plef.CompanyId)
+				  WHERE id=$7`, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description, plef.CompanyId)
 		if err != nil {
 			c.Error = errors.Wrap(err, "updating price item")
 			rw.WriteHeader(http.StatusBadRequest)
@@ -208,6 +225,124 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 			return
 		}
 	}
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
+}
+
+func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
+	var invitationForm InvitationForm
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&invitationForm)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing invitation form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+
+	result, err := db.Query(`SELECT is_supplier FROM companies WHERE id=$1 OR id=$2`, invitationForm.CompanyId, invitationForm.InvitedCompanyId);
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying companies type")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var id1 string
+	var id2 string
+	result.Next()
+	err = result.Scan(&id1)
+	if err != nil {
+		c.Error = errors.Wrap(err, "scanning first result")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	result.Next()
+	err = result.Scan(&id2)
+	if err != nil {
+		c.Error = errors.Wrap(err, "scanning second result")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if id1 == id2 {
+		c.Error = errors.Wrap(errors.New("companies of the same type can not be partners"), "got companies of the same type")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec(`INSERT INTO partnership_invitations (from_id, to_id, message)
+			   VALUES ($1, $2, $3)`, invitationForm.CompanyId, invitationForm.InvitedCompanyId, invitationForm.Message)
+	if err != nil {
+		c.Error = errors.Wrap(err, "inserting invitation")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
+	rw.WriteHeader(http.StatusCreated)
+	c.Reply(rw, req, reply)
+}
+
+func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
+	var invitationAnswerForm InvitationAnswerForm
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&invitationAnswerForm)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing invitation answer form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+
+	isAccepted := false
+	if invitationAnswerForm.Answer == "accepted" {
+		isAccepted = true
+	} else if invitationAnswerForm.Answer != "declined" {
+		c.Error = errors.Wrap(errors.New("answer can be either \"accepted\" or \"declined\""), "got bad invitation answer")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var toId string
+	var dateAnswered string
+	err = db.QueryRow(`SELECT to_id, date_answered FROM partnership_invitations WHERE id=$1`, invitationAnswerForm.InvitationId).Scan(&toId, &dateAnswered)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying invitation reciever's id")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if toId != invitationAnswerForm.CompanyId {
+		c.Error = errors.Wrap(errors.New("attempt to answer a foreign's invitations"), "checking user and resiever's ids")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if dateAnswered != "" {
+		c.Error = errors.Wrap(errors.New("attempt to answer an already answered invitation"), "checking whether invitaion is answered")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec(`UPDATE partnership_invitations SET is_accepted=$1, date_answered=NOW() WHERE id=$2`, isAccepted, invitationAnswerForm.InvitationId)
+	if err != nil {
+		c.Error = errors.Wrap(err, "updating invitations table")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 
 	reply := &ReplyModel {
 		Res: &Response {
