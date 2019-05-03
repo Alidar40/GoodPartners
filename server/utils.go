@@ -21,7 +21,7 @@ type ReplyError struct {
 type Response struct {
 	Login	string	`json:"login,omitempty"`
 	Token	string	`json:"token,omitempty"`
-	Users	[]string `json:"users,omitempty"`
+	Message	string	`json:"message,omitempty"`
 }
 
 type ReplyModel struct {

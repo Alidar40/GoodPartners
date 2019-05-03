@@ -35,6 +35,13 @@ type RegisterForm struct {
 	PriceList		[]PriceListEntry	`json:"priceList"`
 }
 
+type PriceListEditForm struct {
+	CompanyId	string	`json:"companyId"`
+	Insert	[]PriceListEntry	`json:"insert,omitempty"`
+	Update	[]PriceListEntry	`json:"update,omitempty"`
+	Delete	[]PriceListEntry	`json:"delete,omitpemty"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -156,6 +163,57 @@ func (c *Context) GetPricelistById(rw web.ResponseWriter, req *web.Request) {
 		PriceList: pricelist,
 	}
 
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
+}
+
+func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
+	var plef PriceListEditForm
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&plef)
+
+	for _, i := range plef.Insert {
+		_, err = db.Exec(`INSERT INTO pricelist (company_id, sku, name, units, price, category, description) VALUES ($1, $2, $3, $4, $5, $6, $7);`, plef.CompanyId, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description)
+		if err != nil {
+			c.Error = errors.Wrap(err, "inserting price item")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+
+	for _, i := range plef.Update {
+		_, err = db.Exec(`UPDATE pricelist
+				  SET sku=$1,
+				      name=$2,
+				      units=$3,
+				      price=$4,
+				      category=$5,
+				      description=$6
+				  WHERE company_id=$7`, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description, plef.CompanyId)
+		if err != nil {
+			c.Error = errors.Wrap(err, "updating price item")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+
+	for _, i := range plef.Delete {
+		_, err = db.Exec(`DELETE FROM pricelist WHERE id=$1 and company_id=$2`, i.Id, plef.CompanyId)
+		if err != nil {
+			c.Error = errors.Wrap(err, "deleting price item")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
 }

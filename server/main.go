@@ -33,6 +33,7 @@ func main() {
 	apiRouter := rootRouter.Subrouter(Context{}, "/api")
 	apiRouter.Post("/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
 	apiRouter.Get("/supplier/pricelist/:company_id", (*Context).GetPricelistById)
+	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
 
 	rootRouter.Get("/", (*Context).HomePage)
 
