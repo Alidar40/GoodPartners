@@ -27,6 +27,7 @@ type Response struct {
 type ReplyModel struct {
 	Err	*ReplyError	`json:"error,omitempty"`
 	Res	*Response	`json:"response,omitempty"`
+	PriceList	[]PriceListEntry	`json:"priceList,omitempty"`
 }
 
 //Universal replying method

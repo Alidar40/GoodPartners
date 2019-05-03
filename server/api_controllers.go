@@ -12,6 +12,8 @@ import(
 )
 
 type PriceListEntry struct {
+	Id	string	`json:"id,omitempty"`
+	CompanyId	string	`json:"companyId,omitempty"`
 	Sku	string	`json:"sku"`
 	Name	string	`json:"name"`
 	Units	string	`json:"units"`
@@ -122,4 +124,40 @@ func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	rw.WriteHeader(http.StatusCreated)
 	c.Reply(rw, req, reply)
 
+}
+
+func (c *Context) GetPricelistById(rw web.ResponseWriter, req *web.Request) {
+	companyId := req.PathParams["company_id"]
+
+	result, err := db.Query(`SELECT id, sku, name, units, price, category, description 
+			    FROM pricelist
+			    WHERE company_id = $1
+			    ORDER BY name`, companyId)
+
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying pricelist")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer result.Close()
+
+	var pricelist []PriceListEntry
+	for result.Next() {
+		ple := new(PriceListEntry)
+		err = result.Scan(&ple.Id, &ple.Sku, &ple.Name, &ple.Units, &ple.Price, &ple.Category, &ple.Description)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning result")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		pricelist = append(pricelist, *ple)
+
+	}
+
+	reply := &ReplyModel {
+		PriceList: pricelist,
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
 }

@@ -26,15 +26,17 @@ func main() {
 	connectToDb()
 	defer db.Close()
 
-	router := web.New(Context{}).
+	rootRouter := web.New(Context{}).
 		Middleware((*Context).Log).
 		Middleware((*Context).HandleError)
 
-	router.Subrouter(Context{}, "/api").Post("/register/supplier", (*Context).PostRegisterCtrl)
-	router.Subrouter(Context{}, "/api").Post("/register/buyer", (*Context).PostRegisterCtrl)
+	apiRouter := rootRouter.Subrouter(Context{}, "/api")
+	apiRouter.Post("/registration/supplier", (*Context).PostRegisterCtrl)
+	apiRouter.Post("/registration/buyer", (*Context).PostRegisterCtrl)
+	apiRouter.Get("/supplier/pricelist/:company_id", (*Context).GetPricelistById)
 
-	router.Get("/", (*Context).HomePage)
+	rootRouter.Get("/", (*Context).HomePage)
 
 	glog.Info("Server started at port 8000")
-	http.ListenAndServe("localhost:8000", router)
+	http.ListenAndServe("localhost:8000", rootRouter)
 }
