@@ -527,9 +527,9 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	var supplierId string
+	var supplierId, buyerId string
 	var dateAccepted, dateClosed sql.NullString
-	err = db.QueryRow(`SELECT supplier_id, date_accepted, date_closed FROM orders WHERE id=$1`, orderId).Scan(&supplierId, &dateAccepted, &dateClosed)
+	err = db.QueryRow(`SELECT supplier_id, buyer_id, date_accepted, date_closed FROM orders WHERE id=$1`, orderId).Scan(&supplierId, &buyerId, &dateAccepted, &dateClosed)
 	if err != nil {
 		c.Error = errors.Wrap(err, "getting order info")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -562,12 +562,7 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 			return
 		}
 
-		err = Notify(supplierId, "Your supplier accepted order")
-		if err != nil {
-			c.Error = errors.Wrap(err, "notificating")
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		err = Notify(buyerId, "Your supplier accepted order")
 	} else {
 		_, err = db.Exec(`DELETE FROM order_items WHERE order_id=$1`, orderId)
 		if err != nil {
@@ -583,13 +578,12 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 			return
 		}
 
-		err = Notify(supplierId, "Your supplier declined order")
-		if err != nil {
-			c.Error = errors.Wrap(err, "notificating")
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
+		err = Notify(buyerId, "Your supplier declined order")
+	}
+	if err != nil {
+		c.Error = errors.Wrap(err, "notificating")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	reply := &ReplyModel {
@@ -600,4 +594,68 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
 
+}
+
+func (c *Context) CloseOrder(rw web.ResponseWriter, req *web.Request) {
+	orderId := req.PathParams["id"]
+
+	var aof AnswerOrderForm
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&aof)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing close order form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var supplierId, buyerId string
+	var dateAccepted, dateClosed sql.NullString
+	err = db.QueryRow(`SELECT supplier_id, buyer_id, date_accepted, date_closed FROM orders WHERE id=$1`, orderId).Scan(&supplierId, &buyerId, &dateAccepted, &dateClosed)
+	if err != nil {
+		c.Error = errors.Wrap(err, "getting order info")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if buyerId != aof.CompanyId {
+		c.Error = errors.Wrap(errors.New("it is not permissible to answer to other company's order"), "checking buyer's id")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if dateClosed.String != "" {
+		c.Error = errors.Wrap(errors.New("it is impossible to close a closed order again"), "checking order's closeness")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if dateAccepted.String == "" {
+		c.Error = errors.Wrap(errors.New("it is not permissible to close not accepted order"), "checking order's acceptance")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	_, err = db.Exec(`UPDATE orders SET is_closed=true, date_closed=NOW() WHERE id=$1`, orderId)
+	if err != nil {
+		c.Error = errors.Wrap(err, "updating orders table")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+
+	err = Notify(supplierId, "One of your buyers closed his order")
+	if err != nil {
+		c.Error = errors.Wrap(err, "notificating")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
 }
