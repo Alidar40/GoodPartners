@@ -19,6 +19,7 @@ type PriceListEntry struct {
 	Price	float64	`json:"price"`
 	Category	string	`json:"category,omitempty"`
 	Description	string	`json:"description,omitempty"`
+	Count	int	`json:"count,omitempty"`
 }
 
 
@@ -52,6 +53,18 @@ type InvitationAnswerForm struct {
 	CompanyId	string	`json:"companyId"`
 	InvitationId	string	`json:"invitationId"`
 	Answer	string	`json:"answer"`
+}
+
+type MakeOrderEntry struct {
+	Id	string	`json:"id"`
+	Count	int	`json:"count"`
+}
+
+type MakeOrderForm struct {
+	CompanyId	string	`json:"companyId"`
+	SupplierId	string	`json:"supplierId"`
+	Entries	[]MakeOrderEntry	`json:"entries"`
+	Comment		string	`json:"comment"`
 }
 
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
@@ -236,6 +249,7 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
+	//TODO(Alidar) Notification
 	var invitationForm InvitationForm
 
 	decoder := json.NewDecoder(req.Body)
@@ -278,6 +292,8 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	//TODO(Alidar) Check that there is no similar invitations (using trigger?)
+
 	_, err = db.Exec(`INSERT INTO partnership_invitations (from_id, to_id, message)
 			   VALUES ($1, $2, $3)`, invitationForm.CompanyId, invitationForm.InvitedCompanyId, invitationForm.Message)
 	if err != nil {
@@ -296,6 +312,7 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
+	//TODO(Alidar) Notification
 	var invitationAnswerForm InvitationAnswerForm
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&invitationAnswerForm)
@@ -343,6 +360,8 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	//TODO(Alidar) Add data to partners table (using trigger?)
+
 
 	reply := &ReplyModel {
 		Res: &Response {
@@ -350,5 +369,111 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 		},
 	}
 	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
+}
+
+func (c *Context) MakeOrder(rw web.ResponseWriter, req *web.Request) {
+	//TODO(Alidar) Notification
+	var makeOrderForm MakeOrderForm
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&makeOrderForm)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing make order form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//TODO(Alidar)Check that order is made by buyer - middleware
+	//TODO(Alidar)Check that companies are partners - trigger?
+
+	//Check that supplier actually have that stuff
+	result, err := db.Query(`SELECT id, sku, name, units, price, category, description
+				 FROM pricelist
+				 WHERE company_id=$1;`, makeOrderForm.SupplierId)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying pricelist")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	countOfOrderItems := len(makeOrderForm.Entries)
+	var ple PriceListEntry
+	var pl	[]PriceListEntry
+	for result.Next() {
+		err = result.Scan(&ple.Id, &ple.Sku, &ple.Name, &ple.Units, &ple.Price, &ple.Category, &ple.Description)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning pricelist entries")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for _, i := range makeOrderForm.Entries {
+			if i.Id == ple.Id {
+				countOfOrderItems--
+				ple.Count = i.Count
+				pl = append(pl, ple)
+				break
+			}
+		}
+	}
+	if countOfOrderItems != 0 {
+		c.Error = errors.Wrap(errors.New("it is not possible to order something that supplier doesn't have"), "checking availability of a product")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//Insert data into orders table
+
+	_, err = db.Exec(`INSERT INTO orders (buyer_id, supplier_id, comment) VALUES ($1, $2, $3);`, makeOrderForm.CompanyId, makeOrderForm.SupplierId, makeOrderForm.Comment)
+	if err != nil {
+		c.Error = errors.Wrap(err, "inserting into orders table")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	result, err = db.Query(`SELECT id, MAX(date_ordered) as last_date 
+			   FROM orders 
+			   GROUP BY id, buyer_id, supplier_id, comment
+			   ORDER BY last_date DESC;`)
+	if err != nil {
+		c.Error = errors.Wrap(err, "getting order id")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var orderId string
+	var placeholder string
+	for result.Next() {
+		err = result.Scan(&orderId, &placeholder)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning order id")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		break
+	}
+
+	for _, i := range pl {
+		_, err := db.Exec(`INSERT INTO order_items 
+					(order_id, sku, name, units, price, count, category, description)
+				   VALUES
+				   	($1, $2, $3, $4, $5, $6, $7, $8)`, orderId, i.Sku, i.Name, i.Units, i.Price, i.Count, i.Category, i.Description)
+		if err != nil {
+			c.Error = errors.Wrap(err, "inserting order items")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	//TODO(Alidar)Notify
+
+
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
+	rw.WriteHeader(http.StatusCreated)
 	c.Reply(rw, req, reply)
 }

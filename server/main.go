@@ -36,6 +36,7 @@ func main() {
 	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
 	apiRouter.Post("/invitations/partnership/invite", (*Context).InviteCompany)
 	apiRouter.Post("/invitations/partnership/answer", (*Context).AnswerInvitation)
+	apiRouter.Post("/order/make", (*Context).MakeOrder)
 
 	rootRouter.Get("/", (*Context).HomePage)
 
