@@ -91,3 +91,14 @@ func ValidatePassword(password string) (err error) {
 
 	return nil
 }
+
+func Notify(whomId string, message string) (error) {
+	_, err := db.Exec(`INSERT INTO notifications
+				(whom_id, message)
+			   VALUES
+			   	($1, $2);`, whomId, message)
+	if err != nil {
+		return err
+	}
+	return nil
+}

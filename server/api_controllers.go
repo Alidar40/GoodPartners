@@ -249,7 +249,6 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
-	//TODO(Alidar) Notification
 	var invitationForm InvitationForm
 
 	decoder := json.NewDecoder(req.Body)
@@ -302,6 +301,15 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+
+	err = Notify(invitationForm.InvitedCompanyId, "You have received a partnership invitation")
+	if err != nil {
+		c.Error = errors.Wrap(err, "notificating")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+
 	reply := &ReplyModel {
 		Res: &Response {
 			Message: "success",
@@ -312,7 +320,6 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
-	//TODO(Alidar) Notification
 	var invitationAnswerForm InvitationAnswerForm
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&invitationAnswerForm)
@@ -333,8 +340,9 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 	}
 
 	var toId string
+	var fromId string
 	var dateAnswered string
-	err = db.QueryRow(`SELECT to_id, date_answered FROM partnership_invitations WHERE id=$1`, invitationAnswerForm.InvitationId).Scan(&toId, &dateAnswered)
+	err = db.QueryRow(`SELECT to_id, from_id, date_answered FROM partnership_invitations WHERE id=$1`, invitationAnswerForm.InvitationId).Scan(&toId, &fromId, &dateAnswered)
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying invitation reciever's id")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -361,6 +369,15 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 	}
 
 	//TODO(Alidar) Add data to partners table (using trigger?)
+
+
+
+	err = Notify(fromId, "Your invitation has been " + invitationAnswerForm.Answer)
+	if err != nil {
+		c.Error = errors.Wrap(err, "notificating")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 
 	reply := &ReplyModel {
@@ -465,7 +482,12 @@ func (c *Context) MakeOrder(rw web.ResponseWriter, req *web.Request) {
 		}
 	}
 
-	//TODO(Alidar)Notify
+	err = Notify(makeOrderForm.SupplierId, "You have recieved the new order!")
+	if err != nil {
+		c.Error = errors.Wrap(err, "notificating")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 
 
