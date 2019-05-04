@@ -37,6 +37,7 @@ func main() {
 	apiRouter.Post("/invitations/partnership/invite", (*Context).InviteCompany)
 	apiRouter.Post("/invitations/partnership/answer", (*Context).AnswerInvitation)
 	apiRouter.Post("/order/make", (*Context).MakeOrder)
+	apiRouter.Post("/order/answer/:answer/id/:id", (*Context).AnswerToOrder)
 
 	rootRouter.Get("/", (*Context).HomePage)
 

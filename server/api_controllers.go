@@ -5,6 +5,7 @@ import(
 	"crypto/sha256"
 	"encoding/json"
 	"encoding/hex"
+	"database/sql"
 
 	"github.com/gocraft/web"
 	"github.com/pkg/errors"
@@ -65,6 +66,10 @@ type MakeOrderForm struct {
 	SupplierId	string	`json:"supplierId"`
 	Entries	[]MakeOrderEntry	`json:"entries"`
 	Comment		string	`json:"comment"`
+}
+
+type AnswerOrderForm struct {
+	CompanyId	string	`json:"companyId"`
 }
 
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
@@ -498,4 +503,101 @@ func (c *Context) MakeOrder(rw web.ResponseWriter, req *web.Request) {
 	}
 	rw.WriteHeader(http.StatusCreated)
 	c.Reply(rw, req, reply)
+}
+
+func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
+	orderId := req.PathParams["id"]
+	answer := req.PathParams["answer"]
+
+	var aof AnswerOrderForm
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&aof)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing answer order form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	isAccepted := false
+	if answer == "accepted" {
+		isAccepted = true
+	} else if answer != "declined" {
+		c.Error = errors.Wrap(errors.New("answer can be either \"accepted\" or \"declined\""), "got bad order answer")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var supplierId string
+	var dateAccepted, dateClosed sql.NullString
+	err = db.QueryRow(`SELECT supplier_id, date_accepted, date_closed FROM orders WHERE id=$1`, orderId).Scan(&supplierId, &dateAccepted, &dateClosed)
+	if err != nil {
+		c.Error = errors.Wrap(err, "getting order info")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if supplierId != aof.CompanyId {
+		c.Error = errors.Wrap(errors.New("it is not permissible to answer to other company's order"), "checking buyer's id")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if dateClosed.String != "" { //(Alidar) May be use trigger?
+		c.Error = errors.Wrap(errors.New("it is impossible to answer to alredy closed order"), "checking order's closeness-" + dateClosed.String+"-")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if dateAccepted.String != "" {
+		c.Error = errors.Wrap(errors.New("it is not permissible to answer to already accepted order"), "checking order's acceptance")
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if isAccepted {
+		_, err = db.Exec(`UPDATE orders SET is_accepted=true, date_accepted=NOW() WHERE id=$1`, orderId)
+		if err != nil {
+			c.Error = errors.Wrap(err, "updating orders table")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = Notify(supplierId, "Your supplier accepted order")
+		if err != nil {
+			c.Error = errors.Wrap(err, "notificating")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		_, err = db.Exec(`DELETE FROM order_items WHERE order_id=$1`, orderId)
+		if err != nil {
+			c.Error = errors.Wrap(err, "deleting ordert_items")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		_, err = db.Exec(`DELETE FROM orders WHERE id=$1`, orderId)
+		if err != nil {
+			c.Error = errors.Wrap(err, "deleting order")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = Notify(supplierId, "Your supplier declined order")
+		if err != nil {
+			c.Error = errors.Wrap(err, "notificating")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+	}
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
+
 }
