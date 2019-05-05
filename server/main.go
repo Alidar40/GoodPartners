@@ -31,7 +31,8 @@ func main() {
 		Middleware((*Context).HandleError)
 
 	apiRouter := rootRouter.Subrouter(Context{}, "/api")
-	apiRouter.Post("/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
+	apiRouter.Post("/auth/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
+	apiRouter.Post("/auth/login", (*Context).Login)
 	apiRouter.Get("/supplier/pricelist/:company_id", (*Context).GetPricelistById)
 	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
 	apiRouter.Post("/invitations/partnership/invite", (*Context).InviteCompany)

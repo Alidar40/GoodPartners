@@ -9,6 +9,7 @@ import(
 
 	"github.com/gocraft/web"
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 type PriceListEntry struct {
@@ -35,6 +36,11 @@ type RegisterForm struct {
 	CompanyWebsite		string	`json:"companyWebsite,omitempty"`
 	CompanyEmail	string	`json:"companyEmail"`
 	PriceList		[]PriceListEntry	`json:"priceList"`
+}
+
+type LoginForm struct {
+	Email	string	`json:"email"`
+	Password	string	`json:"password"`
 }
 
 type PriceListEditForm struct {
@@ -159,6 +165,58 @@ func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	rw.WriteHeader(http.StatusCreated)
 	c.Reply(rw, req, reply)
 
+}
+
+func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
+	var loginForm	LoginForm
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&loginForm)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing login form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	pswdHash := sha256.Sum256([]byte(loginForm.Password))
+	pswdHashStr := hex.EncodeToString(pswdHash[:])
+
+	var id string
+	err = db.QueryRow(`SELECT id FROM users WHERE email = $1 and password_hash = $2;`, loginForm.Email, pswdHashStr).Scan(&id)
+	if (err != nil) {
+		if (err == sql.ErrNoRows) {
+			c.Error = errors.Wrap(err, "authenticating with wrong credentials")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		c.Error = errors.Wrap(err, "querying users")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	tokenRaw, err := uuid.NewV4()
+	if (err != nil) {
+		c.Error = errors.Wrap(err, "generating token")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.Exec(`INSERT INTO sessions (user_id, token) VALUES($1, $2)`, id, tokenRaw.String())
+	if (err != nil) {
+		c.Error = errors.Wrap(err, "creating session for user " + loginForm.Email)
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	reply := &ReplyModel{
+		Res: &Response{
+			Token: tokenRaw.String(),
+		},
+	}
+
+	http.SetCookie(rw, &http.Cookie{Name: "token", Value: tokenRaw.String(), Path: "/"})
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
 }
 
 func (c *Context) GetPricelistById(rw web.ResponseWriter, req *web.Request) {
