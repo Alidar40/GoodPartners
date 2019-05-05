@@ -44,22 +44,14 @@ type LoginForm struct {
 }
 
 type PriceListEditForm struct {
-	CompanyId	string	`json:"companyId"`
 	Insert	[]PriceListEntry	`json:"insert,omitempty"`
 	Update	[]PriceListEntry	`json:"update,omitempty"`
 	Delete	[]PriceListEntry	`json:"delete,omitpemty"`
 }
 
 type InvitationForm struct {
-	CompanyId	string	`json:"companyId"`
 	InvitedCompanyId	string	`json:"invitedCompanyId"`
 	Message		string	`json:"message,omitempty"`
-}
-
-type InvitationAnswerForm struct {
-	CompanyId	string	`json:"companyId"`
-	InvitationId	string	`json:"invitationId"`
-	Answer	string	`json:"answer"`
 }
 
 type MakeOrderEntry struct {
@@ -68,14 +60,9 @@ type MakeOrderEntry struct {
 }
 
 type MakeOrderForm struct {
-	CompanyId	string	`json:"companyId"`
 	SupplierId	string	`json:"supplierId"`
 	Entries	[]MakeOrderEntry	`json:"entries"`
 	Comment		string	`json:"comment"`
-}
-
-type AnswerOrderForm struct {
-	CompanyId	string	`json:"companyId"`
 }
 
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
@@ -268,9 +255,15 @@ func (c *Context) GetPricelistById(rw web.ResponseWriter, req *web.Request) {
 
 func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 	var plef PriceListEditForm
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&plef)
+	err = decoder.Decode(&plef)
 	if err != nil {
 		c.Error = errors.Wrap(err, "parsing EditPricelistForm")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -278,14 +271,13 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	for _, i := range plef.Insert {
-		_, err = db.Exec(`INSERT INTO pricelist (company_id, sku, name, units, price, category, description) VALUES ($1, $2, $3, $4, $5, $6, $7);`, plef.CompanyId, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description)
+		_, err = db.Exec(`INSERT INTO pricelist (company_id, sku, name, units, price, category, description) VALUES ($1, $2, $3, $4, $5, $6, $7);`, companyId.Value, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description)
 		if err != nil {
 			c.Error = errors.Wrap(err, "inserting price item")
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
 	}
-
 
 	for _, i := range plef.Update {
 		_, err = db.Exec(`UPDATE pricelist
@@ -295,7 +287,7 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 				      price=$4,
 				      category=$5,
 				      description=$6
-				  WHERE id=$7`, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description, plef.CompanyId)
+				  WHERE id=$7`, i.Sku, i.Name, i.Units, i.Price, i.Category, i.Description, companyId.Value)
 		if err != nil {
 			c.Error = errors.Wrap(err, "updating price item")
 			rw.WriteHeader(http.StatusBadRequest)
@@ -305,7 +297,7 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 
 
 	for _, i := range plef.Delete {
-		_, err = db.Exec(`DELETE FROM pricelist WHERE id=$1 and company_id=$2`, i.Id, plef.CompanyId)
+		_, err = db.Exec(`DELETE FROM pricelist WHERE id=$1 and company_id=$2`, i.Id, companyId.Value)
 		if err != nil {
 			c.Error = errors.Wrap(err, "deleting price item")
 			rw.WriteHeader(http.StatusBadRequest)
@@ -324,9 +316,16 @@ func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
 
 func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 	var invitationForm InvitationForm
+	var invitedCompanyId = req.PathParams["id"]
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&invitationForm)
+	err = decoder.Decode(&invitationForm)
 	if err != nil {
 		c.Error = errors.Wrap(err, "parsing invitation form")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -334,7 +333,7 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 	}
 
 
-	result, err := db.Query(`SELECT is_supplier FROM companies WHERE id=$1 OR id=$2`, invitationForm.CompanyId, invitationForm.InvitedCompanyId);
+	result, err := db.Query(`SELECT is_supplier FROM companies WHERE id=$1 OR id=$2`, companyId.Value, invitedCompanyId);
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying companies type")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -367,8 +366,23 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 
 	//TODO(Alidar) Check that there is no similar invitations (using trigger?)
 
+	// Check that they are not partners already
+	var placeholder string
+	err = db.QueryRow(`SELECT buyer_id  FROM partners WHERE (buyer_id=$1 AND supplier_id=$2) OR (buyer_id=$2 AND supplier_id=$1);`, companyId.Value, invitedCompanyId).Scan(&placeholder)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			c.Error = errors.Wrap(err, "checking for partnership")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		c.Error = errors.Wrap(err, "querying partners")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+
 	_, err = db.Exec(`INSERT INTO partnership_invitations (from_id, to_id, message)
-			   VALUES ($1, $2, $3)`, invitationForm.CompanyId, invitationForm.InvitedCompanyId, invitationForm.Message)
+			   VALUES ($1, $2, $3)`, companyId.Value, invitedCompanyId, invitationForm.Message)
 	if err != nil {
 		c.Error = errors.Wrap(err, "inserting invitation")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -376,7 +390,7 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 	}
 
 
-	err = Notify(invitationForm.InvitedCompanyId, "You have received a partnership invitation")
+	err = Notify(invitedCompanyId, "You have received a partnership invitation")
 	if err != nil {
 		c.Error = errors.Wrap(err, "notificating")
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -394,20 +408,19 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
-	var invitationAnswerForm InvitationAnswerForm
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&invitationAnswerForm)
+	var answer = req.PathParams["answer"]
+	var invitationId = req.PathParams["id"]
+	companyId, err := req.Cookie("companyId")
 	if err != nil {
-		c.Error = errors.Wrap(err, "parsing invitation answer form")
-		rw.WriteHeader(http.StatusBadRequest)
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-
 	isAccepted := false
-	if invitationAnswerForm.Answer == "accepted" {
+	if answer == "accepted" {
 		isAccepted = true
-	} else if invitationAnswerForm.Answer != "declined" {
+	} else if answer != "declined" {
 		c.Error = errors.Wrap(errors.New("answer can be either \"accepted\" or \"declined\""), "got bad invitation answer")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
@@ -416,14 +429,14 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 	var toId string
 	var fromId string
 	var dateAnswered string
-	err = db.QueryRow(`SELECT to_id, from_id, date_answered FROM partnership_invitations WHERE id=$1`, invitationAnswerForm.InvitationId).Scan(&toId, &fromId, &dateAnswered)
+	err = db.QueryRow(`SELECT to_id, from_id, date_answered FROM partnership_invitations WHERE id=$1`, invitationId).Scan(&toId, &fromId, &dateAnswered)
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying invitation reciever's id")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if toId != invitationAnswerForm.CompanyId {
+	if toId != companyId.Value {
 		c.Error = errors.Wrap(errors.New("attempt to answer a foreign's invitations"), "checking user and resiever's ids")
 		rw.WriteHeader(http.StatusForbidden)
 		return
@@ -435,7 +448,7 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	_, err = db.Exec(`UPDATE partnership_invitations SET is_accepted=$1, date_answered=NOW() WHERE id=$2`, isAccepted, invitationAnswerForm.InvitationId)
+	_, err = db.Exec(`UPDATE partnership_invitations SET is_accepted=$1, date_answered=NOW() WHERE id=$2`, isAccepted, invitationId)
 	if err != nil {
 		c.Error = errors.Wrap(err, "updating invitations table")
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -446,7 +459,7 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 
 
 
-	err = Notify(fromId, "Your invitation has been " + invitationAnswerForm.Answer)
+	err = Notify(fromId, "Your invitation has been " + answer)
 	if err != nil {
 		c.Error = errors.Wrap(err, "notificating")
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -464,10 +477,17 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 }
 
 func (c *Context) MakeOrder(rw web.ResponseWriter, req *web.Request) {
-	//TODO(Alidar) Notification
 	var makeOrderForm MakeOrderForm
+
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&makeOrderForm)
+	err = decoder.Decode(&makeOrderForm)
 	if err != nil {
 		c.Error = errors.Wrap(err, "parsing make order form")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -514,8 +534,7 @@ func (c *Context) MakeOrder(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	//Insert data into orders table
-
-	_, err = db.Exec(`INSERT INTO orders (buyer_id, supplier_id, comment) VALUES ($1, $2, $3);`, makeOrderForm.CompanyId, makeOrderForm.SupplierId, makeOrderForm.Comment)
+	_, err = db.Exec(`INSERT INTO orders (buyer_id, supplier_id, comment) VALUES ($1, $2, $3);`, companyId.Value, makeOrderForm.SupplierId, makeOrderForm.Comment)
 	if err != nil {
 		c.Error = errors.Wrap(err, "inserting into orders table")
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -578,12 +597,10 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 	orderId := req.PathParams["id"]
 	answer := req.PathParams["answer"]
 
-	var aof AnswerOrderForm
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&aof)
+	companyId, err := req.Cookie("companyId")
 	if err != nil {
-		c.Error = errors.Wrap(err, "parsing answer order form")
-		rw.WriteHeader(http.StatusBadRequest)
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -605,7 +622,7 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	if supplierId != aof.CompanyId {
+	if supplierId != companyId.Value {
 		c.Error = errors.Wrap(errors.New("it is not permissible to answer to other company's order"), "checking buyer's id")
 		rw.WriteHeader(http.StatusForbidden)
 		return
@@ -668,12 +685,10 @@ func (c *Context) AnswerToOrder(rw web.ResponseWriter, req *web.Request) {
 func (c *Context) CloseOrder(rw web.ResponseWriter, req *web.Request) {
 	orderId := req.PathParams["id"]
 
-	var aof AnswerOrderForm
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&aof)
+	companyId, err := req.Cookie("companyId")
 	if err != nil {
-		c.Error = errors.Wrap(err, "parsing close order form")
-		rw.WriteHeader(http.StatusBadRequest)
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -686,7 +701,7 @@ func (c *Context) CloseOrder(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	if buyerId != aof.CompanyId {
+	if buyerId != companyId.Value {
 		c.Error = errors.Wrap(errors.New("it is not permissible to answer to other company's order"), "checking buyer's id")
 		rw.WriteHeader(http.StatusForbidden)
 		return
