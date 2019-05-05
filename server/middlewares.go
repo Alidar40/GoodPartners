@@ -71,12 +71,12 @@ func (c *Context) HandleError(rw web.ResponseWriter, req *web.Request, next web.
 //Authentication check
 func (c *Context) AuthCheck(rw web.ResponseWriter, req *web.Request, next web.NextMiddlewareFunc){
 	var lastActivityTime time.Time
-	var login string
+	var userId, companyId string
 
 	token, err := req.Cookie("token")
-	if (err != nil) {
-		if (err == http.ErrNoCookie){
-			c.Error = errors.Wrap(err, "signing in without cookie")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			c.Error = errors.Wrap(err, "checking token availability")
 			HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
 			return
 		}
@@ -85,40 +85,68 @@ func (c *Context) AuthCheck(rw web.ResponseWriter, req *web.Request, next web.Ne
 		return
 	}
 
-	loginFromCookie, err := req.Cookie("login")
-	if (err != nil) {
-		if (err == http.ErrNoCookie){
-			c.Error = errors.Wrap(err, "signing in without login")
+	userIdFromCookie, err := req.Cookie("id")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			c.Error = errors.Wrap(err, "checking id cookie")
 			HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
 			return
 		}
-		c.Error = errors.Wrap(err, "parsing ligin")
+		c.Error = errors.Wrap(err, "parsing id")
 		HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
 		return
 	}
 
-	err = db.QueryRow(`SELECT lastactivitytime, login FROM sessions WHERE token = $1;`, token.Value).Scan(&lastActivityTime, &login)
-	if (err != nil) {
-		if (err == sql.ErrNoRows){
-			c.Error = errors.Wrap(err, "trying to sign in with bad token")
+	err = db.QueryRow(`SELECT last_activity_time, user_id FROM sessions WHERE token = $1;`, token.Value).Scan(&lastActivityTime, &userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.Error = errors.Wrap(err, "token validation")
 			HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
 			return
 		}
-		c.Error = errors.Wrap(err, "searching for appropriate token in db")
+		c.Error = errors.Wrap(err, "querying sessions")
+		HandleBadAuthResponse(rw, req, http.StatusInternalServerError)
+		return
+	}
+
+	if userIdFromCookie.Value != userId {
+		c.Error = errors.Wrap(errors.New("bad id"), "validating id")
 		HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
 		return
 	}
 
-	if (loginFromCookie.Value != login) {
-		err = errors.New("bad login")
-		c.Error = errors.Wrap(err, "signing in with bad login")
+	companyIdFromCookie, err := req.Cookie("companyId")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			c.Error = errors.Wrap(err, "checking company id cookie")
+			HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
+			return
+		}
+		c.Error = errors.Wrap(err, "parsing company id")
 		HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
 		return
 	}
 
+	err = db.QueryRow(`SELECT company_id FROM users WHERE id=$1`, userId).Scan(&companyId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.Error = errors.Wrap(err, "company id validation")
+			HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
+			return
+		}
+		c.Error = errors.Wrap(err, "querying users")
+		HandleBadAuthResponse(rw, req, http.StatusInternalServerError)
+		return
+	}
 
-	_, err = db.Exec(`UPDATE sessions SET lastactivitytime = now() where token = $1;`, token.Value)
-	if (err != nil) {
+	if companyIdFromCookie.Value != companyId {
+		c.Error = errors.Wrap(errors.New("bad company id"), "validating company id")
+		HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
+		return
+	}
+
+	_, err = db.Exec(`UPDATE sessions SET last_activity_time = now() where token = $1;`, token.Value)
+	if err != nil {
 		c.Error = errors.Wrap(err, "updating session token")
 		HandleBadAuthResponse(rw, req, http.StatusInternalServerError)
 		return

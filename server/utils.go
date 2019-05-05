@@ -1,13 +1,13 @@
 package main
 
 import(
-	"fmt"
 	"io/ioutil"
 	"strings"
 	"database/sql"
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/gocraft/web"
 	"github.com/golang/glog"
@@ -19,6 +19,8 @@ type ReplyError struct {
 }
 
 type Response struct {
+	Id	string	`json:"id,omitempty"`
+	CompanyId	string	`json:"companyId,omitempty"`
 	Login	string	`json:"login,omitempty"`
 	Token	string	`json:"token,omitempty"`
 	Message	string	`json:"message,omitempty"`
@@ -49,27 +51,45 @@ func HandleBadAuthResponse(rw web.ResponseWriter, req *web.Request, status int){
 	}
 }
 
-func connectToDb() {
+func connectToDb() (error){
 
 	pgpass, err := ioutil.ReadFile("./.pgpass")
 	if err != nil {
 		glog.Infof("[ERROR] in main(!) while opening .pgpass: %s", err)
+		return err
 	}
 
-	fmt.Printf("%s", pgpass)
 	connectionString := "postgres://" + strings.TrimRight(string(pgpass), "\r\n") + "@localhost/goodpartnersdb"
 
 	db, err = sql.Open("postgres", connectionString);
 	if err != nil {
 		glog.Infof("[ERROR] in main(!) while opening db: %s", err)
+		return err
 	}
+	return nil
 
-	var name string
-	err = db.QueryRow(`select name from test;`).Scan(&name)
+}
+
+func ClearSessions() (error) {
+	_, err := db.Exec(`DELETE FROM sessions WHERE loas_activity_time < current_timestamp - interval '1 hour';`)
 	if err != nil {
-		glog.Infof("err: %s", err)
+		return err
 	}
-	fmt.Println("name: " + name)
+	return nil
+}
+
+func InitializeSessionsClearing() (error) {
+	ticker := time.NewTicker(30 * time.Minute)
+	go func() {
+		for _ = range ticker.C {
+			err := ClearSessions()
+			if err != nil {
+				glog.Infof("[ERROR] while clearing sessions: ", err)
+				return
+			}
+		}
+	}()
+	return nil
 }
 
 func ValidateEmail(email string) (err error) {

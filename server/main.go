@@ -23,16 +23,27 @@ func main() {
 	flag.Set("v", "2")
 	flag.Parse()
 
-	connectToDb()
+	err := connectToDb()
+	if err != nil {
+		return
+	}
 	defer db.Close()
+
+	err = InitializeSessionsClearing()
+	if err != nil {
+		return
+	}
 
 	rootRouter := web.New(Context{}).
 		Middleware((*Context).Log).
 		Middleware((*Context).HandleError)
 
-	apiRouter := rootRouter.Subrouter(Context{}, "/api")
-	apiRouter.Post("/auth/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
-	apiRouter.Post("/auth/login", (*Context).Login)
+	apiRouterUnauthorized := rootRouter.Subrouter(Context{}, "/api")
+	apiRouterUnauthorized.Post("/auth/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
+	apiRouterUnauthorized.Post("/auth/login", (*Context).Login)
+
+	apiRouter := rootRouter.Subrouter(Context{}, "/api").
+		Middleware((*Context).AuthCheck)
 	apiRouter.Get("/supplier/pricelist/:company_id", (*Context).GetPricelistById)
 	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
 	apiRouter.Post("/invitations/partnership/invite", (*Context).InviteCompany)

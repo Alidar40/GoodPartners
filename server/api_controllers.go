@@ -181,8 +181,8 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 	pswdHash := sha256.Sum256([]byte(loginForm.Password))
 	pswdHashStr := hex.EncodeToString(pswdHash[:])
 
-	var id string
-	err = db.QueryRow(`SELECT id FROM users WHERE email = $1 and password_hash = $2;`, loginForm.Email, pswdHashStr).Scan(&id)
+	var id, companyId string
+	err = db.QueryRow(`SELECT id, company_id FROM users WHERE email = $1 and password_hash = $2;`, loginForm.Email, pswdHashStr).Scan(&id, &companyId)
 	if (err != nil) {
 		if (err == sql.ErrNoRows) {
 			c.Error = errors.Wrap(err, "authenticating with wrong credentials")
@@ -190,6 +190,13 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 			return
 		}
 		c.Error = errors.Wrap(err, "querying users")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.Exec(`DELETE FROM sessions WHERE user_id=$1`, id)
+	if (err != nil) {
+		c.Error = errors.Wrap(err, "deleting previous sessions of user " + loginForm.Email)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -210,10 +217,14 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 
 	reply := &ReplyModel{
 		Res: &Response{
+			Id: id,
+			CompanyId: companyId,
 			Token: tokenRaw.String(),
 		},
 	}
 
+	http.SetCookie(rw, &http.Cookie{Name: "id", Value: id, Path: "/"})
+	http.SetCookie(rw, &http.Cookie{Name: "companyId", Value: companyId, Path: "/"})
 	http.SetCookie(rw, &http.Cookie{Name: "token", Value: tokenRaw.String(), Path: "/"})
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
