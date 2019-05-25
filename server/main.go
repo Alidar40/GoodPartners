@@ -4,6 +4,8 @@ import (
 	"flag"
 	"database/sql"
 	"net/http"
+	"path"
+	"os"
 
 	"github.com/gocraft/web"
 	_ "github.com/lib/pq"
@@ -52,7 +54,10 @@ func main() {
 	apiRouter.Post("/order/answer/:answer/id/:id", (*Context).AnswerToOrder)
 	apiRouter.Post("/order/close/:id", (*Context).CloseOrder)
 
-	rootRouter.Get("/", (*Context).HomePage)
+	currentRoot, _ := os.Getwd()
+	indexRoot := path.Dir(currentRoot)
+	pageRouter := rootRouter.Middleware(web.StaticMiddleware(path.Join(indexRoot, "client"), web.StaticOption{IndexFile: "index.html"}))
+	pageRouter.Get("/", (*Context).HomePage)
 
 	glog.Info("Server started at port 8000")
 	http.ListenAndServe("localhost:8000", rootRouter)
