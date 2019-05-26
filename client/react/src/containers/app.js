@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 import createHistory from 'history/createBrowserHistory'
 
 import WelcomeContainer from '../containers/welcome-container';
+import Dashboard from '../components/dashboard';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -23,6 +24,8 @@ class App extends React.Component {
                             <Route exact path="/" component={WelcomeContainer} />
                             <Route exact path="/login" component={WelcomeContainer} />
                             <Route exact path="/signup" component={WelcomeContainer} />
+                            <Route exact path="/buyer/dashboard" component={Dashboard} />
+                            <Route exact path="/supplier/dashboard" component={Dashboard} />
                         </Switch>
                     </div>
                </BrowserRouter>

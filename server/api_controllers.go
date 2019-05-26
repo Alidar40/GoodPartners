@@ -181,6 +181,14 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	var isSupplier string
+	err = db.QueryRow(`SELECT is_supplier FROM companies WHERE id = $1;`, companyId).Scan(&isSupplier)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying company")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	_, err = db.Exec(`DELETE FROM sessions WHERE user_id=$1`, id)
 	if (err != nil) {
 		c.Error = errors.Wrap(err, "deleting previous sessions of user " + loginForm.Email)
@@ -213,6 +221,7 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 	http.SetCookie(rw, &http.Cookie{Name: "id", Value: id, Path: "/"})
 	http.SetCookie(rw, &http.Cookie{Name: "companyId", Value: companyId, Path: "/"})
 	http.SetCookie(rw, &http.Cookie{Name: "token", Value: tokenRaw.String(), Path: "/"})
+	http.SetCookie(rw, &http.Cookie{Name: "isSupplier", Value: isSupplier, Path: "/"})
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
 }

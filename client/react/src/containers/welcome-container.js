@@ -2,6 +2,7 @@ import React from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux';
 import { Redirect } from 'react-router-dom'
+import Cookies from 'js-cookie';
 
 import Login from '../components/login'
 import Welcome from '../components/welcome';
@@ -19,9 +20,18 @@ class WelcomeContainer extends React.Component {
 
     render() {
         const { user } = this.props;
+	var isSupplier = Cookies.get('isSupplier');
 
         let greeting;
         const loading = <div className="container body-content"><br/><h3>Loading</h3></div>
+
+	if (user.isLoggedIn && !user.isLoggingOut) {
+		if (isSupplier == "true") {
+			this.props.history.push("/supplier/dashboard");
+		} else {
+			this.props.history.push("/buyer/dashboard")
+		}
+    	}
 
         if (this.props.location.pathname === "/signup") {
             if (user.isLoggedIn && !user.isLoggingOut) {
@@ -30,9 +40,6 @@ class WelcomeContainer extends React.Component {
 	}
 
         if (this.props.location.pathname === "/login") {
-            if (user.isLoggedIn && !user.isLoggingOut) {
-                this.props.history.push("/");
-            }
 
             greeting = <div>
                 <Login isLoginRequestFailed={this.props.user.isLoginRequestFailed}

@@ -71,7 +71,7 @@ func connectToDb() (error){
 }
 
 func ClearSessions() (error) {
-	_, err := db.Exec(`DELETE FROM sessions WHERE loas_activity_time < current_timestamp - interval '1 hour';`)
+	_, err := db.Exec(`DELETE FROM sessions WHERE last_activity_time < current_timestamp - interval '1 hour';`)
 	if err != nil {
 		return err
 	}
