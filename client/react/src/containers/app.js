@@ -6,6 +6,7 @@ import createHistory from 'history/createBrowserHistory'
 
 import WelcomeContainer from '../containers/welcome-container';
 import Dashboard from '../components/dashboard';
+import OrdersHistory from '../components/orders-history';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -26,6 +27,7 @@ class App extends React.Component {
                             <Route exact path="/signup" component={WelcomeContainer} />
                             <Route exact path="/buyer/dashboard" component={Dashboard} />
                             <Route exact path="/supplier/dashboard" component={Dashboard} />
+                            <Route exact path="/history" component={OrdersHistory} />
                         </Switch>
                     </div>
                </BrowserRouter>

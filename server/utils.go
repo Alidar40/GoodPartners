@@ -30,6 +30,7 @@ type ReplyModel struct {
 	Err	*ReplyError	`json:"error,omitempty"`
 	Res	*Response	`json:"response,omitempty"`
 	PriceList	[]PriceListEntry	`json:"priceList,omitempty"`
+	Orders		[]Order		`json:"orders,omitempty"`
 }
 
 //Universal replying method
@@ -41,6 +42,15 @@ func (c *Context) Reply(rw web.ResponseWriter, req *web.Request, model *ReplyMod
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	rw.Write(reply)
+}
+
+type User struct {
+	Id		string	`json:"id"`
+	Email		string	`json:"email"`
+	Password	string	`json:"password"`
+	FirstName	string	`json:"firstName"`
+	LastName	string	`json:"lastName"`
+	CompanyId	string	`json:"conpanyId"`
 }
 
 func HandleBadAuthResponse(rw web.ResponseWriter, req *web.Request, status int){

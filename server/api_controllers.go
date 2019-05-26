@@ -65,6 +65,20 @@ type MakeOrderForm struct {
 	Comment		string	`json:"comment"`
 }
 
+type Order struct {
+	Id		string	`json:"id"`
+	SupplierId	string	`json:"supplierId"`
+	SupplierName	string	`json:"supplierName"`
+	BuyerId		string	`json:"buyerId"`
+	BuyerName	string	`json:"buyerName"`
+	DateOrdered	string	`json:"dateOrdered"`
+	Comment		string	`json:"comment"`
+	IsAccepted	bool	`json:"isAccepted"`
+	DateAccepted	string	`json:"dateAccepted"`
+	IsClosed	bool	`json:"isClosed"`
+	DateClosed	string	`json:"dateClosed"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -780,4 +794,90 @@ func (c *Context) CloseOrder(rw web.ResponseWriter, req *web.Request) {
 	}
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
+}
+
+func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+
+	isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var result *sql.Rows
+	if isSupplier.Value == "true" {
+		result, err = db.Query(`SELECT * FROM orders WHERE supplier_id=$1 and is_closed=true;`, companyId.Value)
+	} else {
+		result, err = db.Query(`SELECT * FROM orders WHERE buyer_id=$1 and is_closed=true;`, companyId.Value)
+	}
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying orders history")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var ordersHistory []Order
+	companies := make(map[string]string)
+	for result.Next() {
+		order := new(Order)
+		err = result.Scan(&order.Id, &order.SupplierId, &order.BuyerId, &order.DateOrdered, &order.Comment, &order.IsAccepted, &order.DateAccepted, &order.IsClosed, &order.DateClosed)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning order")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var companyName string
+		_, ok := companies[order.SupplierId]
+		if ok == false {
+			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.SupplierId).Scan(&companyName)
+			if err != nil {
+				c.Error = errors.Wrap(err, "getting supplier's name")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			companies[order.SupplierId] = companyName
+		}
+		order.SupplierName = companyName
+
+		_, ok = companies[order.BuyerId]
+		if ok == false {
+			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.BuyerId).Scan(&companyName)
+			if err != nil {
+				c.Error = errors.Wrap(err, "getting buyer's name")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			companies[order.BuyerId] = companyName
+		}
+		order.BuyerName = companyName
+
+		ordersHistory = append(ordersHistory, *order)
+	}
+
+	/*reply := &ReplyModel {
+		Orders: ordersHistory,
+	}*/
+	reply, err := json.MarshalIndent(ordersHistory, "", " ")
+	if (err != nil) {
+		c.Error = err
+		return
+	}
+
+	if len(ordersHistory) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+	}
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Write(reply)
+	//c.Reply(rw, req, reply)
 }

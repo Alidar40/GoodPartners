@@ -54,6 +54,7 @@ func main() {
 	apiRouter.Post("/order/make", (*Context).MakeOrder)
 	apiRouter.Post("/order/answer/:answer/id/:id", (*Context).AnswerToOrder)
 	apiRouter.Post("/order/close/:id", (*Context).CloseOrder)
+	apiRouter.Get("/order/history", (*Context).GetOrdersHistory)
 
 	currentRoot, _ := os.Getwd()
 	indexRoot := path.Dir(currentRoot)
