@@ -45,3 +45,20 @@ export function handleLogin(email, password) {
     }
 }
 
+export function handleLogout() {
+    return function (dispatch) {
+        fetch('/api/auth/logout', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                /*'Set-Cookie': Cookies.get('token'),
+                'Set-Cookie': Cookies.get('id'),
+                'Set-Cookie': Cookies.get('companyId'),*/
+            }
+        })
+
+        dispatch({
+            type: ACTION_LOGOUT
+        })
+    }
+}

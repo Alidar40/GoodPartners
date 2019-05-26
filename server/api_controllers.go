@@ -226,6 +226,35 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 	c.Reply(rw, req, reply)
 }
 
+func (c *Context) Logout(rw web.ResponseWriter, req *web.Request) {
+	token, err := req.Cookie("token")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing token")
+		HandleBadAuthResponse(rw, req, http.StatusUnauthorized)
+		return
+	}
+
+	_, err = db.Exec(`DELETE FROM sessions WHERE token=$1;`, token.Value)
+	if (err != nil) {
+		c.Error = errors.Wrap(err, "deleting session for token " + token.Value)
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	reply := &ReplyModel {
+		Res: &Response {
+			Message: "success",
+		},
+	}
+
+	http.SetCookie(rw, &http.Cookie{Name: "id", MaxAge: -1, Value: "", Path: "/"})
+	http.SetCookie(rw, &http.Cookie{Name: "companyId", MaxAge: -1, Value: "", Path: "/"})
+	http.SetCookie(rw, &http.Cookie{Name: "token", MaxAge: -1, Value: "", Path: "/"})
+	http.SetCookie(rw, &http.Cookie{Name: "isSupplier", MaxAge: -1, Value: "", Path: "/"})
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
+}
+
 func (c *Context) GetPricelistById(rw web.ResponseWriter, req *web.Request) {
 	companyId := req.PathParams["company_id"]
 

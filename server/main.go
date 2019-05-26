@@ -46,6 +46,7 @@ func main() {
 
 	apiRouter := rootRouter.Subrouter(Context{}, "/api").
 		Middleware((*Context).AuthCheck)
+	apiRouter.Delete("/auth/logout", (*Context).Logout)
 	apiRouter.Get("/supplier/pricelist/:company_id", (*Context).GetPricelistById)
 	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
 	apiRouter.Post("/invitations/partnership/invite/:id", (*Context).InviteCompany)
@@ -62,3 +63,4 @@ func main() {
 	glog.Info("Server started at port 8000")
 	http.ListenAndServe("localhost:8000", rootRouter)
 }
+
