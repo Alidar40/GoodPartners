@@ -13,12 +13,17 @@ function OrdersHistoryBtn(props) {
 	return (<button onClick={props.onClick}>Orders history</button>);
 }
 
+function PricelistBtn(props) {
+	return (<button onClick={props.onClick}>Price list</button>);
+}
+
 class Dashboard extends React.Component {
 	constructor(props) {
 		super(props);
 		this.isSupplier = Cookies.get('isSupplier')
 		this.handleLogoutClick = this.handleLogoutClick.bind(this);
 		this.handleOrdersHistoryClick = this.handleOrdersHistoryClick.bind(this);
+		this.handlePricelistClick = this.handlePricelistClick.bind(this);
 	}
 
 	handleLogoutClick() {
@@ -30,11 +35,21 @@ class Dashboard extends React.Component {
 		this.props.history.push("/history")
 	}
 
+	handlePricelistClick() {
+		this.props.history.push("/supplier/pricelist")
+	}
+
 	render() {
+		var button1
+		if (this.isSupplier == "true") {
+			button1 = <PricelistBtn onClick={this.handlePricelistClick} />
+		}
+
 		return <div>
 			<h2>{this.isSupplier}</h2>	
 			<LogoutButton onClick={this.handleLogoutClick} />
 			<OrdersHistoryBtn onClick={this.handleOrdersHistoryClick} />
+			{button1}
 		</div>
 	}
 }

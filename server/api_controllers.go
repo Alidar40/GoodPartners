@@ -297,12 +297,12 @@ func (c *Context) GetPricelistById(rw web.ResponseWriter, req *web.Request) {
 
 	}
 
-	reply := &ReplyModel {
-		PriceList: pricelist,
+	if len(pricelist) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+	} else {
+		rw.WriteHeader(http.StatusOK)
 	}
-
-	rw.WriteHeader(http.StatusOK)
-	c.Reply(rw, req, reply)
+	c.Reply(rw, req, pricelist)
 }
 
 func (c *Context) EditPricelist(rw web.ResponseWriter, req *web.Request) {
@@ -863,21 +863,10 @@ func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
 		ordersHistory = append(ordersHistory, *order)
 	}
 
-	/*reply := &ReplyModel {
-		Orders: ordersHistory,
-	}*/
-	reply, err := json.MarshalIndent(ordersHistory, "", " ")
-	if (err != nil) {
-		c.Error = err
-		return
-	}
-
 	if len(ordersHistory) == 0 {
 		rw.WriteHeader(http.StatusNotFound)
 	} else {
 		rw.WriteHeader(http.StatusOK)
 	}
-	rw.Header().Set("Content-Type", "application/json")
-	rw.Write(reply)
-	//c.Reply(rw, req, reply)
+	c.Reply(rw, req, ordersHistory)
 }

@@ -34,7 +34,7 @@ type ReplyModel struct {
 }
 
 //Universal replying method
-func (c *Context) Reply(rw web.ResponseWriter, req *web.Request, model *ReplyModel){
+func (c *Context) Reply(rw web.ResponseWriter, req *web.Request, model interface{}){
 	reply, err := json.MarshalIndent(model, "", " ")
 	if (err != nil) {
 		c.Error = err
