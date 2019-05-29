@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 import createHistory from 'history/createBrowserHistory'
 
 import WelcomeContainer from '../containers/welcome-container';
+import Signup from '../components/signup';
 import Dashboard from '../components/dashboard';
 import OrdersHistory from '../components/orders-history';
 import Pricelist from '../components/pricelist';
@@ -25,7 +26,7 @@ class App extends React.Component {
                         <Switch>
                             <Route exact path="/" component={WelcomeContainer} />
                             <Route exact path="/login" component={WelcomeContainer} />
-                            <Route exact path="/signup" component={WelcomeContainer} />
+                            <Route exact path="/signup" component={Signup} />
                             <Route exact path="/buyer/dashboard" component={Dashboard} />
                             <Route exact path="/supplier/dashboard" component={Dashboard} />
                             <Route exact path="/history" component={OrdersHistory} />
