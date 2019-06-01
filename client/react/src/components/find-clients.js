@@ -5,7 +5,7 @@ import "react-table/react-table.css";
 
 import { formatJsonDateToUTC } from '../utils/date';
 
-class MyClients extends React.Component {
+class FindClients extends React.Component {
     constructor(props) {
 	super(props);
     	this.companyId = Cookies.get('companyId')
@@ -13,13 +13,8 @@ class MyClients extends React.Component {
 	    clients: null,
 	    clientsFetched: false,
 	}
-	this.request = {
-		insert: [],
-		update: [],
-		delete: []
-	}
 
-	fetch('/api/clients', {
+	fetch('/api/clients/find', {
 		method: 'GET',
 	})
 	.then(response => {
@@ -49,7 +44,6 @@ class MyClients extends React.Component {
 		    const data = this.state.clients;
 		    return (
 		      	<div>
-			        <button onClick={() => {this.props.history.push("/clients/find")}}>Find new clients</button>
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -62,12 +56,12 @@ class MyClients extends React.Component {
 				      accessor: "description",
 				    },
 				    {
-				      Header: "Make order",
-				      id: "make order",
+				      Header: "Invite",
+				      id: "invite",
 				      accessor: d =>
 					<button
 					  dangerouslySetInnerHTML={{
-					    __html: "Make order"
+					    __html: "Invite"
 					  }}
 					  onClick={() => {
 					  	//TODO(Alidar)
@@ -102,4 +96,5 @@ class MyClients extends React.Component {
 	}
 }
 
-export default MyClients;
+export default FindClients;
+
