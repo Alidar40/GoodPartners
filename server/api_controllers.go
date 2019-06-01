@@ -79,6 +79,14 @@ type Order struct {
 	DateClosed	string	`json:"dateClosed"`
 }
 
+type Company struct {
+	Id		string	`json:"id"`
+	Name		string	`json:"name"`
+	Description	string	`json:"description"`
+	Website		string	`json:"website"`
+	Email		string	`json:"email"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -427,9 +435,6 @@ func (c *Context) InviteCompany(rw web.ResponseWriter, req *web.Request) {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		c.Error = errors.Wrap(err, "querying partners")
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
 	}
 
 
@@ -480,8 +485,8 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 
 	var toId string
 	var fromId string
-	var dateAnswered string
-	err = db.QueryRow(`SELECT to_id, from_id, date_answered FROM partnership_invitations WHERE id=$1`, invitationId).Scan(&toId, &fromId, &dateAnswered)
+	var dateAnswered sql.NullString
+	err = db.QueryRow(`SELECT to_id, from_id, date_answered FROM partnership_invitations WHERE id=$1;`, invitationId).Scan(&toId, &fromId, &dateAnswered)
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying invitation reciever's id")
 		rw.WriteHeader(http.StatusBadRequest)
@@ -494,7 +499,7 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	if dateAnswered != "" {
+	if dateAnswered.Valid {
 		c.Error = errors.Wrap(errors.New("attempt to answer an already answered invitation"), "checking whether invitaion is answered")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
@@ -507,9 +512,24 @@ func (c *Context) AnswerInvitation (rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	//TODO(Alidar) Add data to partners table (using trigger?)
-
-
+	isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if isSupplier.Value == "true" {
+		_, err = db.Exec(`INSERT INTO partners (buyer_id, supplier_id)
+					VALUES ($1, $2);`, fromId, toId)
+	} else {
+		_, err = db.Exec(`INSERT INTO partners (buyer_id, supplier_id)
+					VALUES ($1, $2);`, toId, fromId)
+	}
+	if err != nil {
+		c.Error = errors.Wrap(err, "inserting partners")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	err = Notify(fromId, "Your invitation has been " + answer)
 	if err != nil {
@@ -869,4 +889,56 @@ func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}
 	c.Reply(rw, req, ordersHistory)
+}
+
+func (c *Context) GetClients(rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var result *sql.Rows
+	if isSupplier.Value == "true" {
+		result, err = db.Query(`SELECT buyer_id FROM partners WHERE supplier_id=$1;`, companyId.Value)
+	} else {
+		result, err = db.Query(`SELECT supplier_id FROM partners WHERE buyer_id=$1;`, companyId.Value)
+	}
+
+	var companies []Company
+	for result.Next() {
+		var companyId string
+		err = result.Scan(&companyId)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning company id")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		company := new(Company)
+		err := db.QueryRow(`SELECT id, name, description, website, email FROM companies WHERE id=$1;`, companyId).Scan(&company.Id, &company.Name, &company.Description, &company.Website, &company.Email)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning company")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		companies = append(companies, *company)
+
+	}
+
+	if len(companies) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+	}
+	c.Reply(rw, req, companies)
+
 }
