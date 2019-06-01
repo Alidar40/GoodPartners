@@ -942,3 +942,67 @@ func (c *Context) GetClients(rw web.ResponseWriter, req *web.Request) {
 	c.Reply(rw, req, companies)
 
 }
+
+func (c *Context) FindClients(rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var result *sql.Rows
+	if isSupplier.Value == "true" {
+		result, err = db.Query(`SELECT id, name, description, website, email
+					FROM (SELECT * 
+						FROM companies 
+						WHERE is_supplier=false) as ct
+					INNER JOIN (SELECT * 
+						FROM partners 
+						WHERE supplier_id = $1) as pt
+					ON ct.id <> pt.buyer_id;`, companyId.Value)
+	} else {
+		result, err = db.Query(`SELECT id, name, description, website, email
+					FROM (SELECT * 
+						FROM companies 
+						WHERE is_supplier=true) as ct
+					INNER JOIN (SELECT * 
+						FROM partners 
+						WHERE buyer_id = $1) as pt
+					ON ct.id <> pt.supplier_id;`, companyId.Value)
+	}
+
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying new clients")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var companies []Company
+	for result.Next() {
+		company := new(Company)
+		err = result.Scan(&company.Id, &company.Name, &company.Description, &company.Website, &company.Email)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning company")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		companies = append(companies, *company)
+
+	}
+
+	if len(companies) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+	}
+	c.Reply(rw, req, companies)
+
+}

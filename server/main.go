@@ -56,6 +56,7 @@ func main() {
 	apiRouter.Post("/order/close/:id", (*Context).CloseOrder)
 	apiRouter.Get("/order/history", (*Context).GetOrdersHistory)
 	apiRouter.Get("/clients", (*Context).GetClients)
+	apiRouter.Get("/clients/find", (*Context).FindClients)
 
 	currentRoot, _ := os.Getwd()
 	indexRoot := path.Dir(currentRoot)
