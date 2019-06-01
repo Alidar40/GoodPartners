@@ -908,23 +908,30 @@ func (c *Context) GetClients(rw web.ResponseWriter, req *web.Request) {
 
 	var result *sql.Rows
 	if isSupplier.Value == "true" {
-		result, err = db.Query(`SELECT buyer_id FROM partners WHERE supplier_id=$1;`, companyId.Value)
+		result, err = db.Query(`SELECT id, name, description, website, email 
+					FROM companies
+					INNER JOIN (SELECT buyer_id 
+						    FROM partners 
+						    WHERE supplier_id=$1) as pt
+					ON companies.id = pt.buyer_id;`, companyId.Value)
 	} else {
-		result, err = db.Query(`SELECT supplier_id FROM partners WHERE buyer_id=$1;`, companyId.Value)
+		result, err = db.Query(`SELECT id, name, description, website, email 
+					FROM companies
+					INNER JOIN (SELECT supplier_id 
+						    FROM partners 
+						    WHERE buyer_id=$1) as pt
+					ON companies.id = pt.supplier_id;`, companyId.Value)
+	}
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying clients")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	var companies []Company
 	for result.Next() {
-		var companyId string
-		err = result.Scan(&companyId)
-		if err != nil {
-			c.Error = errors.Wrap(err, "scanning company id")
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
 		company := new(Company)
-		err := db.QueryRow(`SELECT id, name, description, website, email FROM companies WHERE id=$1;`, companyId).Scan(&company.Id, &company.Name, &company.Description, &company.Website, &company.Email)
+		err := result.Scan(&company.Id, &company.Name, &company.Description, &company.Website, &company.Email)
 		if err != nil {
 			c.Error = errors.Wrap(err, "scanning company")
 			rw.WriteHeader(http.StatusInternalServerError)
