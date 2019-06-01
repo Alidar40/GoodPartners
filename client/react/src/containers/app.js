@@ -9,6 +9,7 @@ import Signup from '../components/signup';
 import Dashboard from '../components/dashboard';
 import OrdersHistory from '../components/orders-history';
 import Pricelist from '../components/pricelist';
+import MyClients from '../components/myclients';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -31,6 +32,7 @@ class App extends React.Component {
                             <Route exact path="/supplier/dashboard" component={Dashboard} />
                             <Route exact path="/history" component={OrdersHistory} />
                             <Route exact path="/supplier/pricelist" component={Pricelist} />
+                            <Route exact path="/clients" component={MyClients} />
                         </Switch>
                     </div>
                </BrowserRouter>
