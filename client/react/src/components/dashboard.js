@@ -57,6 +57,7 @@ class Dashboard extends React.Component {
 		this.handleMyClientsClick = this.handleMyClientsClick.bind(this);
 		this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
 		this.handlePlaceorderClick = this.handlePlaceorderClick.bind(this);
+		this.handleNotificationsClick = this.handleNotificationsClick.bind(this);
 	}
 
 	componentWillMount() {
@@ -106,6 +107,10 @@ class Dashboard extends React.Component {
 		this.props.history.push("/buyer/placeorder/client")
 	}
 
+	handleNotificationsClick() {
+		this.props.history.push("/notifications")
+	}
+
 	render() {
 		console.log(this.state)
 		var pricelistBtn
@@ -124,7 +129,9 @@ class Dashboard extends React.Component {
 			<MyClientsBtn onClick={this.handleMyClientsClick} />
 			<FindClientsBtn onClick={this.handleFindClientsClick} />
 			{placeorderBtn}
-			<NotificationsBtn count={this.state.notifications} />
+			<NotificationsBtn 
+				onClick={this.handleNotificationsClick}
+				count={this.state.notifications} />
 			<CurrentOrdersBtn 
 				unaccepted={this.state.unaccepted}
 				accepted={this.state.accepted}

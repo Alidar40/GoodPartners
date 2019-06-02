@@ -94,6 +94,11 @@ type Status struct {
 	Closed		int	`json:"closed"`
 }
 
+type Notification struct {
+	Message	string	`json:"message"`
+	Date	string	`json:"date"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -1089,7 +1094,8 @@ func (c *Context) GetStatus(rw web.ResponseWriter, req *web.Request) {
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying count of closed orders")
 		rw.WriteHeader(http.StatusInternalServerError)
-		return }
+		return
+	}
 
 	reply := &Status {
 		Notifications: notifsCount,
@@ -1099,4 +1105,47 @@ func (c *Context) GetStatus(rw web.ResponseWriter, req *web.Request) {
 	}
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
+}
+
+func (c *Context) GetNotifications(rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	result, err := db.Query(`SELECT message, date_sent
+				 FROM notifications
+				 WHERE is_read=false AND whom_id=$1;`, companyId.Value)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying notifications")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var notifs []Notification
+	for result.Next() {
+		var notif Notification
+		err = result.Scan(&notif.Message, &notif.Date)
+		if err != nil {
+			c.Error = errors.Wrap(err, "parsing notification")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		notifs = append(notifs, notif)
+	}
+
+	_, err = db.Exec(`UPDATE notifications
+			  SET is_read=true
+			  WHERE whom_id=$1`, companyId.Value)
+	if err != nil {
+		c.Error = errors.Wrap(err, "updating notifications")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	c.Reply(rw, req, notifs)
+
+
 }

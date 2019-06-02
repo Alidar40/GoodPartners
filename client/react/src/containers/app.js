@@ -13,6 +13,7 @@ import MyClients from '../components/myclients';
 import FindClients from '../components/find-clients';
 import OrderProducts from '../components/order-products';
 import OrderFinish from '../components/order-finish';
+import Notifications from '../components/notifications';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -40,6 +41,7 @@ class App extends React.Component {
                             <Route exact path="/buyer/placeorder/client" component={MyClients} />
                             <Route exact path="/buyer/placeorder/products" component={OrderProducts} />
                             <Route exact path="/buyer/placeorder/finish" component={OrderFinish} />
+                            <Route exact path="/notifications" component={Notifications} />
                         </Switch>
                     </div>
                </BrowserRouter>
