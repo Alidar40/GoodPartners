@@ -114,7 +114,7 @@ class Dashboard extends React.Component {
 
 	handleCurrentOrdersClick() {
 		if (this.isSupplier == "true") {
-			//TODO(Alidar)
+			this.props.history.push("/supplier/orders/current")
 		} else {
 			this.props.history.push("/buyer/orders/current")
 		}

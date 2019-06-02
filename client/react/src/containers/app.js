@@ -15,6 +15,7 @@ import OrderProducts from '../components/order-products';
 import OrderFinish from '../components/order-finish';
 import Notifications from '../components/notifications';
 import CurrentOrdersBuyer from '../components/current-orders-buyer';
+import CurrentOrdersSupplier from '../components/current-orders-supplier';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -44,6 +45,7 @@ class App extends React.Component {
                             <Route exact path="/buyer/placeorder/finish" component={OrderFinish} />
                             <Route exact path="/notifications" component={Notifications} />
                             <Route exact path="/buyer/orders/current" component={CurrentOrdersBuyer} />
+                            <Route exact path="/supplier/orders/current" component={CurrentOrdersSupplier} />
                         </Switch>
                     </div>
                </BrowserRouter>

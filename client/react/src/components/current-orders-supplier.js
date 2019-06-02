@@ -5,7 +5,10 @@ import "react-table/react-table.css";
 
 import { formatJsonDateToUTC } from '../utils/date';
 
-class CurrentOrdersBuyer extends React.Component {
+function NotAcceptedTable(props) {
+}
+
+class CurrentOrdersSupplier extends React.Component {
     constructor(props) {
 	super(props);
     	this.companyId = Cookies.get('companyId')
@@ -64,7 +67,7 @@ class CurrentOrdersBuyer extends React.Component {
 		    const data_notAccepted = this.state.notAccepted;
 		    var notAcceptedTable = <h3>You don't have unaccepted orders</h3>
 		    if (this.state.notAccepted.length != 0) {
-				notAcceptedTable = <ReactTable
+		    	notAcceptedTable = <ReactTable
 				  data={data_notAccepted}
 				  columns={[
 				    {
@@ -78,6 +81,52 @@ class CurrentOrdersBuyer extends React.Component {
 				    {
 				      Header: "Comment",
 				      accessor: "comment",
+				    },
+				    {
+				      Header: "Accept",
+				      id: "accept",
+				      accessor: d =>
+					<button
+					  dangerouslySetInnerHTML={{
+					    __html: "Accept"
+					  }}
+					  onClick={() => {
+						fetch('/api/order/answer/accepted/id/' + d.id, {
+							method: 'POST',
+						})
+						.then(response => {
+							if (response.status === 200) {
+								this.forceUpdate()
+							}
+						})
+						.catch(error => {
+							console.log(error);
+						})
+					  }}
+					></button>
+				    },
+				    {
+				      Header: "Decline",
+				      id: "decline",
+				      accessor: d =>
+					<button
+					  dangerouslySetInnerHTML={{
+					    __html: "Decline"
+					  }}
+					  onClick={() => {
+						fetch('/api/order/answer/declined/id/' + d.id, {
+							method: 'POST',
+						})
+						.then(response => {
+							if (response.status === 200) {
+								this.forceUpdate()
+							}
+						})
+						.catch(error => {
+							console.log(error);
+						})
+					  }}
+					></button>
 				    }
 				  ]}
 				  defaultPageSize={7}
@@ -144,30 +193,7 @@ class CurrentOrdersBuyer extends React.Component {
 				    {
 				      Header: "Comment",
 				      accessor: "comment",
-				    },
-				    {
-				      Header: "Close",
-				      id: "close",
-				      accessor: d =>
-					<button
-					  dangerouslySetInnerHTML={{
-					    __html: "Close"
-					  }}
-					  onClick={() => {
-						fetch('/api/order/close/' + d.id, {
-							method: 'POST',
-						})
-						.then(response => {
-							if (response.status === 200) {
-								this.forceUpdate()
-							}
-						})
-						.catch(error => {
-							console.log(error);
-						})
-					  }}
-					></button>
-				    },
+				    }
 				  ]}
 				  defaultPageSize={7}
 				  className="-striped -highlight"
@@ -226,4 +252,5 @@ class CurrentOrdersBuyer extends React.Component {
 	}
 }
 
-export default CurrentOrdersBuyer;
+export default CurrentOrdersSupplier;
+
