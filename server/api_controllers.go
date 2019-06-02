@@ -77,6 +77,7 @@ type Order struct {
 	DateAccepted	string	`json:"dateAccepted"`
 	IsClosed	bool	`json:"isClosed"`
 	DateClosed	string	`json:"dateClosed"`
+	Entries		[]PriceListEntry	`json:"entries"`
 }
 
 type Company struct {
@@ -1148,4 +1149,104 @@ func (c *Context) GetNotifications(rw web.ResponseWriter, req *web.Request) {
 	c.Reply(rw, req, notifs)
 
 
+}
+
+func (c *Context) GetCurrentOrders(rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+
+	isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var result *sql.Rows
+	if isSupplier.Value == "true" {
+		result, err = db.Query(`SELECT * FROM orders WHERE supplier_id=$1 and is_closed=false;`, companyId.Value)
+	} else {
+		result, err = db.Query(`SELECT * FROM orders WHERE buyer_id=$1 and is_closed=false;`, companyId.Value)
+	}
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying current orders")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	companies := make(map[string]string)
+	for result.Next() {
+		order := new(Order)
+		var comment, dateOrdered, dateAccepted, dateClosed sql.NullString
+		err = result.Scan(&order.Id, &order.SupplierId, &order.BuyerId, &dateOrdered, &comment, &order.IsAccepted, &dateAccepted, &order.IsClosed, &dateClosed)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning order")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		order.Comment = comment.String
+		order.DateOrdered = dateOrdered.String
+		order.DateAccepted = dateAccepted.String
+		order.DateClosed = dateClosed.String
+
+		var companyName string
+		_, ok := companies[order.SupplierId]
+		if ok == false {
+			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.SupplierId).Scan(&companyName)
+			if err != nil {
+				c.Error = errors.Wrap(err, "getting supplier's name")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			companies[order.SupplierId] = companyName
+		}
+		order.SupplierName = companyName
+
+		_, ok = companies[order.BuyerId]
+		if ok == false {
+			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.BuyerId).Scan(&companyName)
+			if err != nil {
+				c.Error = errors.Wrap(err, "getting buyer's name")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			companies[order.BuyerId] = companyName
+		}
+		order.BuyerName = companyName
+
+		entries_res, err := db.Query(`SELECT id, sku, name, units, price, category, description, count
+					      FROM order_items
+					      WHERE order_id=$1;`, order.Id)
+		if err != nil {
+			c.Error = errors.Wrap(err, "querying order items")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for entries_res.Next() {
+			var en PriceListEntry
+			err = entries_res.Scan(&en.Id, &en.Sku, &en.Name, &en.Units, &en.Price, &en.Category, &en.Description, &en.Count)
+			if err != nil {
+				c.Error = errors.Wrap(err, "scanning order item")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			order.Entries = append(order.Entries, en)
+		}
+
+		orders = append(orders, *order)
+	}
+
+	if len(orders) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+	}
+	c.Reply(rw, req, orders)
 }

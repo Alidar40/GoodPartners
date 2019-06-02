@@ -55,6 +55,7 @@ func main() {
 	apiRouter.Post("/order/answer/:answer/id/:id", (*Context).AnswerToOrder)
 	apiRouter.Post("/order/close/:id", (*Context).CloseOrder)
 	apiRouter.Get("/order/history", (*Context).GetOrdersHistory)
+	apiRouter.Get("/order/current", (*Context).GetCurrentOrders)
 	apiRouter.Get("/clients", (*Context).GetClients)
 	apiRouter.Get("/clients/find", (*Context).FindClients)
 	apiRouter.Get("/status", (*Context).GetStatus)
