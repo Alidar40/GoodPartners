@@ -23,11 +23,9 @@ class MyClients extends React.Component {
 		method: 'GET',
 	})
 	.then(response => {
-		console.log(response)
 		return response.json();
 	})
 	.then(data => {
-		console.log(data)
 		if (JSON.stringify(data) === JSON.stringify(null)) {
 			this.setState({ ordersHistory: "CLIENTSLIST_IS_EMPTY", clientsFetched: true });
 		} else {
@@ -46,10 +44,23 @@ class MyClients extends React.Component {
 
 	render() {
 	    if (this.state.clientsFetched) {
+		    var head
+		    if (this.props.location.pathname === "/clients") {
+			head = <div>
+				<h3>My clients</h3>
+			        <button onClick={() => {this.props.history.push("/clients/find")}}>Find new clients</button>
+				</div>
+		    } else if (this.props.location.pathname === "/buyer/placeorder/client") {
+		    	head = <div>
+				<h3>Choose a client</h3>
+				</div>
+		    }
+			
+
 		    const data = this.state.clients;
 		    return (
 		      	<div>
-			        <button onClick={() => {this.props.history.push("/clients/find")}}>Find new clients</button>
+				{head}
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -70,7 +81,7 @@ class MyClients extends React.Component {
 					    __html: "Make order"
 					  }}
 					  onClick={() => {
-					  	//TODO(Alidar)
+						this.props.history.push("/buyer/placeorder/products", {supplierId: d.id});
 					  }}
 					></button>
 				    }

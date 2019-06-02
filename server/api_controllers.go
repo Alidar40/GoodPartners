@@ -566,6 +566,14 @@ func (c *Context) MakeOrder(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	for _, i := range makeOrderForm.Entries {
+		if i.Count <= 0 {
+			c.Error = errors.Wrap(errors.New("wrong count of products"), "checking count of products")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
 	//TODO(Alidar)Check that order is made by buyer - middleware
 	//TODO(Alidar)Check that companies are partners - trigger?
 

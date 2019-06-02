@@ -25,6 +25,10 @@ function FindClientsBtn(props) {
 	return (<button onClick={props.onClick}>Find clients</button>);
 }
 
+function PlaceorderBtn(props) {
+	return (<button onClick={props.onClick}>Place order</button>);
+}
+
 class Dashboard extends React.Component {
 	constructor(props) {
 		super(props);
@@ -34,6 +38,7 @@ class Dashboard extends React.Component {
 		this.handlePricelistClick = this.handlePricelistClick.bind(this);
 		this.handleMyClientsClick = this.handleMyClientsClick.bind(this);
 		this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
+		this.handlePlaceorderClick = this.handlePlaceorderClick.bind(this);
 	}
 
 	handleLogoutClick() {
@@ -57,19 +62,27 @@ class Dashboard extends React.Component {
 		this.props.history.push("/clients/find")
 	}
 
+	handlePlaceorderClick() {
+		this.props.history.push("/buyer/placeorder/client")
+	}
+
 	render() {
-		var button1
+		var pricelistBtn
+		var placeorderBtn
 		if (this.isSupplier == "true") {
-			button1 = <PricelistBtn onClick={this.handlePricelistClick} />
+			pricelistBtn = <PricelistBtn onClick={this.handlePricelistClick} />
+		} else {
+			placeorderBtn = <PlaceorderBtn onClick={this.handlePlaceorderClick} />
 		}
 
 		return <div>
 			<h2>{this.isSupplier}</h2>	
 			<LogoutButton onClick={this.handleLogoutClick} />
 			<OrdersHistoryBtn onClick={this.handleOrdersHistoryClick} />
-			{button1}
+			{pricelistBtn}
 			<MyClientsBtn onClick={this.handleMyClientsClick} />
 			<FindClientsBtn onClick={this.handleFindClientsClick} />
+			{placeorderBtn}
 		</div>
 	}
 }
