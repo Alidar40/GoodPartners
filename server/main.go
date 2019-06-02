@@ -57,6 +57,7 @@ func main() {
 	apiRouter.Get("/order/history", (*Context).GetOrdersHistory)
 	apiRouter.Get("/clients", (*Context).GetClients)
 	apiRouter.Get("/clients/find", (*Context).FindClients)
+	apiRouter.Get("/status", (*Context).GetStatus)
 
 	currentRoot, _ := os.Getwd()
 	indexRoot := path.Dir(currentRoot)

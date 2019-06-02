@@ -29,9 +29,27 @@ function PlaceorderBtn(props) {
 	return (<button onClick={props.onClick}>Place order</button>);
 }
 
+function NotificationsBtn(props) {
+	return (<button onClick={props.onClick}>Notifications - {props.count}</button>);
+}
+
+function CurrentOrdersBtn(props) {
+	return (<button onClick={props.onClick} >Current orders<br/>
+		<span>unaccepted: {props.unaccepted}</span><br/>
+		<span>accepted: {props.accepted}</span><br/>
+		<span>closed: {props.closed}</span><br/>
+		</button>);
+}
+
 class Dashboard extends React.Component {
 	constructor(props) {
 		super(props);
+		this.state = {
+			notifications: 0,
+			unaccepted: 0,
+			accepted: 0,
+			closed: 0,
+		}
 		this.isSupplier = Cookies.get('isSupplier')
 		this.handleLogoutClick = this.handleLogoutClick.bind(this);
 		this.handleOrdersHistoryClick = this.handleOrdersHistoryClick.bind(this);
@@ -39,6 +57,28 @@ class Dashboard extends React.Component {
 		this.handleMyClientsClick = this.handleMyClientsClick.bind(this);
 		this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
 		this.handlePlaceorderClick = this.handlePlaceorderClick.bind(this);
+	}
+
+	componentWillMount() {
+		fetch('/api/status', {
+			method: 'GET',
+		})
+		.then(response => {
+			if (response.status === 200) {
+				return response.json();
+			}
+		})
+		.then(data => {
+			this.setState({
+					notifications: data.notifications,
+					unaccepted: data.unaccepted,
+					accepted: data.accepted,
+					closed: data.closed,
+				      })
+		})
+		.catch(error => {
+			console.log(error);
+		})
 	}
 
 	handleLogoutClick() {
@@ -67,6 +107,7 @@ class Dashboard extends React.Component {
 	}
 
 	render() {
+		console.log(this.state)
 		var pricelistBtn
 		var placeorderBtn
 		if (this.isSupplier == "true") {
@@ -83,6 +124,12 @@ class Dashboard extends React.Component {
 			<MyClientsBtn onClick={this.handleMyClientsClick} />
 			<FindClientsBtn onClick={this.handleFindClientsClick} />
 			{placeorderBtn}
+			<NotificationsBtn count={this.state.notifications} />
+			<CurrentOrdersBtn 
+				unaccepted={this.state.unaccepted}
+				accepted={this.state.accepted}
+				closed={this.state.closed}
+			/>
 		</div>
 	}
 }

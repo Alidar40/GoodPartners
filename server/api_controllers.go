@@ -87,6 +87,13 @@ type Company struct {
 	Email		string	`json:"email"`
 }
 
+type Status struct {
+	Notifications	int	`json:"notifications"`
+	Unaccepted	int	`json:"unaccepted"`
+	Accepted	int	`json:"accepted"`
+	Closed		int	`json:"closed"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -1020,4 +1027,76 @@ func (c *Context) FindClients(rw web.ResponseWriter, req *web.Request) {
 	}
 	c.Reply(rw, req, companies)
 
+}
+
+func (c *Context) GetStatus(rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var notifsCount int
+	err = db.QueryRow(`SELECT COUNT(is_read) 
+				 FROM notifications 
+				 WHERE (is_read=false AND whom_id=$1);`, companyId.Value).Scan(&notifsCount)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying count of notifications")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var compId string
+	if isSupplier.Value == "true" {
+		compId = "supplier_id"
+	} else {
+		compId = "buyer_id"
+	}
+
+
+	var unacceptedCount int
+	err = db.QueryRow(`SELECT COUNT(is_accepted) 
+				 FROM orders 
+				 WHERE (is_accepted=false AND ` + compId + `=$1);`, companyId.Value).Scan(&unacceptedCount)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying count of unaccepted orders")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var acceptedCount int
+	err = db.QueryRow(`SELECT COUNT(is_accepted) 
+				 FROM orders 
+				 WHERE (is_accepted=true AND is_closed=false AND ` + compId + `=$1);`, companyId.Value).Scan(&acceptedCount)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying count of accepted orders")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var closedCount int
+	err = db.QueryRow(`SELECT COUNT(is_closed) 
+				 FROM orders 
+				 WHERE (is_closed=true AND ` + compId + `=$1);`, companyId.Value).Scan(&closedCount)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying count of closed orders")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return }
+
+	reply := &Status {
+		Notifications: notifsCount,
+		Unaccepted: unacceptedCount,
+		Accepted: acceptedCount,
+		Closed: closedCount,
+	}
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, reply)
 }
