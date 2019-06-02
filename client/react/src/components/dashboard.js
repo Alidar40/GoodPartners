@@ -30,12 +30,12 @@ function PlaceorderBtn(props) {
 }
 
 function NotificationsBtn(props) {
-	return (<button onClick={props.onClick}>Notifications - {props.count}</button>);
+	return (<button onClick={props.onClick}>Notifications: {props.count}</button>);
 }
 
 function CurrentOrdersBtn(props) {
 	return (<button onClick={props.onClick} >Current orders<br/>
-		<span>unaccepted: {props.unaccepted}</span><br/>
+		<span>not accepted: {props.unaccepted}</span><br/>
 		<span>accepted: {props.accepted}</span><br/>
 		<span>closed: {props.closed}</span><br/>
 		</button>);
@@ -58,6 +58,7 @@ class Dashboard extends React.Component {
 		this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
 		this.handlePlaceorderClick = this.handlePlaceorderClick.bind(this);
 		this.handleNotificationsClick = this.handleNotificationsClick.bind(this);
+		this.handleCurrentOrdersClick = this.handleCurrentOrdersClick.bind(this);
 	}
 
 	componentWillMount() {
@@ -111,6 +112,14 @@ class Dashboard extends React.Component {
 		this.props.history.push("/notifications")
 	}
 
+	handleCurrentOrdersClick() {
+		if (this.isSupplier == "true") {
+			//TODO(Alidar)
+		} else {
+			this.props.history.push("/buyer/orders/current")
+		}
+	}
+
 	render() {
 		console.log(this.state)
 		var pricelistBtn
@@ -133,6 +142,7 @@ class Dashboard extends React.Component {
 				onClick={this.handleNotificationsClick}
 				count={this.state.notifications} />
 			<CurrentOrdersBtn 
+				onClick={this.handleCurrentOrdersClick}
 				unaccepted={this.state.unaccepted}
 				accepted={this.state.accepted}
 				closed={this.state.closed}

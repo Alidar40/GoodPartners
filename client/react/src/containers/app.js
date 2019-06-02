@@ -14,6 +14,7 @@ import FindClients from '../components/find-clients';
 import OrderProducts from '../components/order-products';
 import OrderFinish from '../components/order-finish';
 import Notifications from '../components/notifications';
+import CurrentOrdersBuyer from '../components/current-orders-buyer';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -42,6 +43,7 @@ class App extends React.Component {
                             <Route exact path="/buyer/placeorder/products" component={OrderProducts} />
                             <Route exact path="/buyer/placeorder/finish" component={OrderFinish} />
                             <Route exact path="/notifications" component={Notifications} />
+                            <Route exact path="/buyer/orders/current" component={CurrentOrdersBuyer} />
                         </Switch>
                     </div>
                </BrowserRouter>

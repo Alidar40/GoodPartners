@@ -876,8 +876,7 @@ func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
 			return
 		}
 
-		var companyName string
-		_, ok := companies[order.SupplierId]
+		companyName, ok := companies[order.SupplierId]
 		if ok == false {
 			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.SupplierId).Scan(&companyName)
 			if err != nil {
@@ -889,7 +888,7 @@ func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
 		}
 		order.SupplierName = companyName
 
-		_, ok = companies[order.BuyerId]
+		companyName, ok = companies[order.BuyerId]
 		if ok == false {
 			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.BuyerId).Scan(&companyName)
 			if err != nil {
@@ -1168,11 +1167,15 @@ func (c *Context) GetCurrentOrders(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	var result *sql.Rows
+	var compId string
 	if isSupplier.Value == "true" {
-		result, err = db.Query(`SELECT * FROM orders WHERE supplier_id=$1 and is_closed=false;`, companyId.Value)
+		compId = "supplier_id"
 	} else {
-		result, err = db.Query(`SELECT * FROM orders WHERE buyer_id=$1 and is_closed=false;`, companyId.Value)
+		compId = "buyer_id"
 	}
+	result, err = db.Query(`SELECT id, supplier_id, buyer_id, date_ordered, comment, is_accepted, date_accepted, is_closed, date_closed 
+				FROM orders 
+				WHERE ` + compId + `=$1 and is_closed=false;`, companyId.Value)
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying current orders")
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -1195,8 +1198,7 @@ func (c *Context) GetCurrentOrders(rw web.ResponseWriter, req *web.Request) {
 		order.DateAccepted = dateAccepted.String
 		order.DateClosed = dateClosed.String
 
-		var companyName string
-		_, ok := companies[order.SupplierId]
+		companyName, ok := companies[order.SupplierId]
 		if ok == false {
 			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.SupplierId).Scan(&companyName)
 			if err != nil {
@@ -1207,8 +1209,9 @@ func (c *Context) GetCurrentOrders(rw web.ResponseWriter, req *web.Request) {
 			companies[order.SupplierId] = companyName
 		}
 		order.SupplierName = companyName
+		companyName = ""
 
-		_, ok = companies[order.BuyerId]
+		companyName, ok = companies[order.BuyerId]
 		if ok == false {
 			err = db.QueryRow(`SELECT name FROM companies WHERE id = $1;`, order.BuyerId).Scan(&companyName)
 			if err != nil {
