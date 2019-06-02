@@ -41,6 +41,10 @@ function CurrentOrdersBtn(props) {
 		</button>);
 }
 
+function InvitationsBtn(props) {
+	return (<button onClick={props.onClick}>Invitations: {props.count}</button>);
+}
+
 class Dashboard extends React.Component {
 	constructor(props) {
 		super(props);
@@ -49,6 +53,7 @@ class Dashboard extends React.Component {
 			unaccepted: 0,
 			accepted: 0,
 			closed: 0,
+			invitations: 0,
 		}
 		this.isSupplier = Cookies.get('isSupplier')
 		this.handleLogoutClick = this.handleLogoutClick.bind(this);
@@ -59,6 +64,7 @@ class Dashboard extends React.Component {
 		this.handlePlaceorderClick = this.handlePlaceorderClick.bind(this);
 		this.handleNotificationsClick = this.handleNotificationsClick.bind(this);
 		this.handleCurrentOrdersClick = this.handleCurrentOrdersClick.bind(this);
+		this.handleInvitationsClick = this.handleInvitationsClick.bind(this);
 	}
 
 	componentWillMount() {
@@ -76,6 +82,7 @@ class Dashboard extends React.Component {
 					unaccepted: data.unaccepted,
 					accepted: data.accepted,
 					closed: data.closed,
+					invitations: data.invitations,
 				      })
 		})
 		.catch(error => {
@@ -120,8 +127,11 @@ class Dashboard extends React.Component {
 		}
 	}
 
+	handleInvitationsClick() {
+		this.props.history.push("/invitations")
+	}
+
 	render() {
-		console.log(this.state)
 		var pricelistBtn
 		var placeorderBtn
 		if (this.isSupplier == "true") {
@@ -147,6 +157,9 @@ class Dashboard extends React.Component {
 				accepted={this.state.accepted}
 				closed={this.state.closed}
 			/>
+			<InvitationsBtn 
+				onClick={this.handleInvitationsClick}
+				count={this.state.invitations} />
 		</div>
 	}
 }

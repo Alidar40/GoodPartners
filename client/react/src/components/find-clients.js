@@ -12,7 +12,9 @@ class FindClients extends React.Component {
 	this.state = {
 	    clients: null,
 	    clientsFetched: false,
+	    message: "",
 	}
+	this.handleCommentInput = this.handleCommentInput.bind(this);
 
 	fetch('/api/clients/find', {
 		method: 'GET',
@@ -39,6 +41,9 @@ class FindClients extends React.Component {
     }
 
 
+	handleCommentInput(event) {
+		this.setState({message: event.target.value })
+	}
 	render() {
 	    if (this.state.clientsFetched) {
 		    const data = this.state.clients;
@@ -59,14 +64,34 @@ class FindClients extends React.Component {
 				      Header: "Invite",
 				      id: "invite",
 				      accessor: d =>
+					<div>
 					<button
 					  dangerouslySetInnerHTML={{
 					    __html: "Invite"
 					  }}
 					  onClick={() => {
-					  	//TODO(Alidar)
+						fetch('/api/invitations/partnership/invite/' + d.id, {
+							method: 'POST',
+						        headers: {
+							    'Content-Type': 'application/json',
+						        },
+							body: JSON.stringify({
+								message: this.state.message,
+							      }),
+						})
+						.then(response => {
+							if (response.status === 200) {
+								this.forceUpdate()
+							}
+						})
+						.catch(error => {
+							console.log(error);
+						})
 					  }}
 					></button>
+				        <label for="comment">Comment:</label>
+				        <textarea onChange={this.handleCommentInput} id="comment" rows="3"></textarea>
+					</div>
 				    }
 				  ]}
 				  defaultPageSize={10}

@@ -93,11 +93,20 @@ type Status struct {
 	Unaccepted	int	`json:"unaccepted"`
 	Accepted	int	`json:"accepted"`
 	Closed		int	`json:"closed"`
+	Invitations	int	`json:"invitations"`
 }
 
 type Notification struct {
 	Message	string	`json:"message"`
 	Date	string	`json:"date"`
+}
+
+type Invitation struct {
+	Id		string	`json:"id"`
+	FromId		string	`json:"fromId"`
+	Message		string	`json:"message"`
+	DateInvited	string	`json:"dateInvited"`
+	Sender		Company	`json:"sender"`
 }
 
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
@@ -985,6 +994,19 @@ func (c *Context) FindClients(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	var count int
+	if isSupplier.Value == "true" {
+		err = db.QueryRow(`SELECT COUNT(buyer_id) FROM partners WHERE supplier_id=$1`, companyId.Value).Scan(&count)
+	} else {
+		err = db.QueryRow(`SELECT COUNT(buyer_id) FROM partners WHERE buyer_id=$1`, companyId.Value).Scan(&count)
+	}
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying partners count")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+
 	var result *sql.Rows
 	if isSupplier.Value == "true" {
 		result, err = db.Query(`SELECT id, name, description, website, email
@@ -1012,6 +1034,17 @@ func (c *Context) FindClients(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	if count == 0 {
+		if isSupplier.Value == "true" {
+			result, err = db.Query(`SELECT id, name, description, website, email
+ 					FROM companies 
+					WHERE is_supplier=false;`)
+		} else {
+			result, err = db.Query(`SELECT id, name, description, website, email
+ 					FROM companies 
+					WHERE is_supplier=true;`)
+		}
+	}
 	var companies []Company
 	for result.Next() {
 		company := new(Company)
@@ -1097,11 +1130,21 @@ func (c *Context) GetStatus(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	var invitationsCount int
+	err = db.QueryRow(`SELECT COUNT(is_accepted) 
+				 FROM partnership_invitations 
+				 WHERE (is_accepted=false AND to_id=$1);`, companyId.Value).Scan(&invitationsCount)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying count of invitations")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	reply := &Status {
 		Notifications: notifsCount,
 		Unaccepted: unacceptedCount,
 		Accepted: acceptedCount,
 		Closed: closedCount,
+		Invitations: invitationsCount,
 	}
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
@@ -1252,4 +1295,61 @@ func (c *Context) GetCurrentOrders(rw web.ResponseWriter, req *web.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}
 	c.Reply(rw, req, orders)
+}
+
+func (c *Context) GetInvitations(rw web.ResponseWriter, req *web.Request) {
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+
+	/*isSupplier, err := req.Cookie("isSupplier")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing isSupplier")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}*/
+
+	result, err := db.Query(`SELECT id, from_id, message, date_invited
+				 FROM partnership_invitations
+				 WHERE is_accepted=false and to_id=$1`, companyId.Value)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying invitations")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var invitations []Invitation
+	for result.Next() {
+		var invit Invitation
+		err = result.Scan(&invit.Id, &invit.FromId, &invit.Message, &invit.DateInvited)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning invitation")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var sender Company
+		err = db.QueryRow(`SELECT id, name, description, website, email 
+			   	   FROM companies
+				   WHERE id=$1;`, invit.FromId).Scan(&sender.Id, &sender.Name, &sender.Description, &sender.Website, &sender.Email)
+		if err != nil {
+			c.Error = errors.Wrap(err, "scanning sender")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		invit.Sender = sender
+		invitations = append(invitations, invit)
+
+	}
+	if len(invitations) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+	} else {
+		rw.WriteHeader(http.StatusOK)
+	}
+	c.Reply(rw, req, invitations)
 }

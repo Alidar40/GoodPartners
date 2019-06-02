@@ -60,6 +60,7 @@ func main() {
 	apiRouter.Get("/clients/find", (*Context).FindClients)
 	apiRouter.Get("/status", (*Context).GetStatus)
 	apiRouter.Get("/notifications", (*Context).GetNotifications)
+	apiRouter.Get("/invitations", (*Context).GetInvitations)
 
 	currentRoot, _ := os.Getwd()
 	indexRoot := path.Dir(currentRoot)

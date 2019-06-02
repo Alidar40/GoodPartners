@@ -5,6 +5,10 @@ import "react-table/react-table.css";
 
 import { formatJsonDateToUTC } from '../utils/date';
 
+function FindClientsBtn(props) {
+	return (<button onClick={props.onClick}>Find clients</button>);
+}
+
 class MyClients extends React.Component {
     constructor(props) {
 	super(props);
@@ -18,6 +22,7 @@ class MyClients extends React.Component {
 		update: [],
 		delete: []
 	}
+	this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
 
 	fetch('/api/clients', {
 		method: 'GET',
@@ -26,8 +31,8 @@ class MyClients extends React.Component {
 		return response.json();
 	})
 	.then(data => {
-		if (JSON.stringify(data) === JSON.stringify(null)) {
-			this.setState({ ordersHistory: "CLIENTSLIST_IS_EMPTY", clientsFetched: true });
+		if (data == null) {
+			this.setState({ clients: "EMPTY", clientsFetched: true });
 		} else {
 			this.setState({ clients: data, clientsFetched: true });
 		}
@@ -37,13 +42,19 @@ class MyClients extends React.Component {
 	})
     }
 
-    componentWillUnmount() {
-        this.setState({ pricelistFetched: false });
-    }
-
+	handleFindClientsClick() {
+		this.props.history.push("/clients/find")
+	}
 
 	render() {
 	    if (this.state.clientsFetched) {
+	    	    if(this.state.clients == "EMPTY") {
+		    	return(<div>
+				   <h3>You don't have any clients</h3>
+				   <FindClientsBtn onClick={this.handleFindClientsClick} />
+				</div>)
+		    }
+
 		    var head
 		    if (this.props.location.pathname === "/clients") {
 			head = <div>
