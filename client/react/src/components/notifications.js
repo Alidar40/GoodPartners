@@ -26,7 +26,7 @@ class Notifications extends React.Component {
 		if (JSON.stringify(data) === JSON.stringify(null)) {
 			this.setState({ notifications: "NOTIFICATIONS_ARE_EMPTY", notificationsFetched: true });
 		} else {
-			this.setState({ notifications: data, notificationsFetched: true });
+			this.setState({ notifications: formatJsonDateToUTC(JSON.stringify(data)), notificationsFetched: true });
 		}
 	})
 	.catch(error => {
@@ -42,11 +42,11 @@ class Notifications extends React.Component {
 	render() {
 	    if (this.state.notificationsFetched) {
 	    	    if (this.state.notifications === "NOTIFICATIONS_ARE_EMPTY") {
-			    return <div className="container body-content"><br /><h3>You don't have any notifications</h3></div>
+			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any notifications</h3></div>
 		    }
 		    const data = this.state.notifications;
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -65,7 +65,7 @@ class Notifications extends React.Component {
 			    </div>
 			    );
 		  } else {
-		    return <div className="container body-content"><br /><h3>Loading content</h3></div>
+		    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>Loading content</h3></div>
 	  	}
 	}
 }

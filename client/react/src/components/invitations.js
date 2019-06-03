@@ -43,11 +43,12 @@ class Invitations extends React.Component {
 	render() {
 	    if (this.state.invitationsFetched) {
 	    	    if (this.state.invitations == "EMPTY") {
-		    	return (<h3>You don't have any invitations</h3>)
+		    	return (<div className="container jumbotron form-group" style={{ background: "white" }}><h3>You don't have any invitations</h3></div>)
 		    }
 		    const data = this.state.invitations;
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+				<h3>Invitations</h3>
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -68,6 +69,8 @@ class Invitations extends React.Component {
 				      id: "accept",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-success"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Accept"
 					  }}
@@ -91,6 +94,8 @@ class Invitations extends React.Component {
 				      id: "decline",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-danger"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Decline"
 					  }}
@@ -132,7 +137,7 @@ class Invitations extends React.Component {
 			    </div>
 			    );
 		  } else {
-		    return <div className="container body-content"><br /><h3>Loading content</h3></div>
+		    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>Loading content</h3></div>
 	  	}
 	}
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import Cookies from 'js-cookie';
-import { TacoTable, DataType, SortDirection, Formatters, Summarizers, TdClassNames } from 'react-taco-table';
+import ReactTable from "react-table";
 
 import { formatJsonDateToUTC } from '../utils/date';
 
@@ -14,9 +14,6 @@ class OrdersHistory extends React.Component {
 
         fetch('/api/order/history', {
             method: 'GET',
-            /*headers: {
-                'Set-Cookie': Cookies.get('.AspNetCore.Identity.Application'),
-            }*/
         })
             .then(response => {
                 return response.json();
@@ -46,13 +43,13 @@ class OrdersHistory extends React.Component {
         }
         return <div>
             <h2>My old orders</h2>
-            <TacoTable
+            <ReactTable
                 className="table table-hover simple-example table-full-width table-striped table-sortable"
                 columns={columns}
                 columnHighlighting
                 data={ordersHistory}
-                striped
-                sortable
+	        defaultPageSize={10}
+	        className="-striped -highlight"
             />
         </div>
     }
@@ -61,42 +58,37 @@ class OrdersHistory extends React.Component {
         if (this.state.historyFetched) {
             const columns = [
                 {
-                    id: 'buyerName',
-                    type: DataType.String,
-                    header: 'Buyer',
+                    Header: 'Buyer',
+                    accessor: 'buyerName',
                 },
                 {
-                    id: 'supplierName',
-                    type: DataType.String,
-                    header: 'Supplier',
+                    Header: 'Supplier',
+                    accessor: 'supplierName',
                 },
                 {
-                    id: 'dateOrdered',
-                    type: DataType.String,
-                    header: 'Date ordered',
+                    Header: 'Date ordered',
+                    accessor: 'dateOrdered',
                 },
                 {
-                    id: 'comment',
-                    type: DataType.String,
-                    header: 'Comment',
+                    Header: 'Comment',
+                    accessor: 'comment',
                 },
                 {
-                    id: 'dateAccepted',
-                    type: DataType.String,
-                    header: 'Date accepted',
+                    Header: 'Date accepted',
+                    accessor: 'dateAccepted',
                 },
                 {
-                    id: 'dateClosed',
-                    type: DataType.String,
-                    header: 'Date closed',
+                    Header: 'Date closed',
+                    accessor: 'dateClosed',
                 }];
 
-            return <div className="container body-content">
+            return <div className="container jumbotron form-group" style={{ background: "white" }}>
                 {this.OrdersHistory(formatJsonDateToUTC(JSON.stringify(this.state.ordersHistory)), columns)}
 
             </div>
         } else {
-            return <div className="container body-content"><br /><h3>Loading content</h3></div>
+            return <div className="container jumbotron form-group" style={{ background: "white" }}>
+<br /><h3>Loading content</h3></div>
         }
     }
 }

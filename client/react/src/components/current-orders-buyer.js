@@ -58,7 +58,7 @@ class CurrentOrdersBuyer extends React.Component {
 	render() {
 	    if (this.state.currentOrdersFetched) {
 	    	    if (this.state.noCurrentOrders) {
-			    return <div className="container body-content"><br /><h3>You don't have any current orders</h3></div>
+			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any current orders</h3></div>
 		    }
 		    const data_accepted = this.state.accepted;
 		    const data_notAccepted = this.state.notAccepted;
@@ -150,6 +150,8 @@ class CurrentOrdersBuyer extends React.Component {
 				      id: "close",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-success"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Close"
 					  }}
@@ -213,9 +215,10 @@ class CurrentOrdersBuyer extends React.Component {
 				/>
 		    }
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
 				<h3>Not accepted</h3>
 				{notAcceptedTable}
+				<br/>
 				<h3>Accepted</h3>
 				{acceptedTable}
 			    </div>

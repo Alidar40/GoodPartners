@@ -48,7 +48,9 @@ class FindClients extends React.Component {
 	    if (this.state.clientsFetched) {
 		    const data = this.state.clients;
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+
+				<h3>Invite new clients</h3>
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -64,8 +66,10 @@ class FindClients extends React.Component {
 				      Header: "Invite",
 				      id: "invite",
 				      accessor: d =>
-					<div>
+					<div className="conteiner">
 					<button
+					  className="btn btn-outline-success"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Invite"
 					  }}
@@ -89,8 +93,14 @@ class FindClients extends React.Component {
 						})
 					  }}
 					></button>
-				        <label for="comment">Comment:</label>
-				        <textarea onChange={this.handleCommentInput} id="comment" rows="3"></textarea>
+					</div>
+				    },
+				    {
+				      Header: "Comment",
+				      id: "comment",
+				      accessor: d =>
+					<div>
+				        <textarea class="form-control" onChange={this.handleCommentInput} id="comment" rows="1"></textarea>
 					</div>
 				    }
 				  ]}

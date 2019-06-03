@@ -33,7 +33,6 @@ class App extends React.Component {
                     <div>
                         <Switch>
                             <Route exact path="/" component={WelcomeContainer} />
-                            <Route exact path="/login" component={WelcomeContainer} />
                             <Route exact path="/signup" component={Signup} />
                             <Route exact path="/buyer/dashboard" component={Dashboard} />
                             <Route exact path="/supplier/dashboard" component={Dashboard} />

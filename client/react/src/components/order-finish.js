@@ -76,7 +76,8 @@ class OrderFinish extends React.Component {
 	    if (this.state.entries.length > 0) {
 		    const data = this.state.pl
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+
 				<h3>Your order: </h3>
 				<ReactTable
 				  data={data}
@@ -106,14 +107,16 @@ class OrderFinish extends React.Component {
 				  className="-striped -highlight"
 				/>
 			    <div>
+			      <br/>
 			      <label for="comment">Comment:</label>
-			      <textarea onChange={this.handleCommentInput} id="comment" rows="3"></textarea>
+			      <textarea className="form-control" onChange={this.handleCommentInput} id="comment" rows="1"></textarea>
 			    </div>
-			    <button onClick={this.handleOrderClick}>Order</button>
+			    <br/>
+			    <button className="btn btn-success btn-lg" onClick={this.handleOrderClick}>Order</button>
 			    </div>
 			    );
 		  } else {
-		    return <div className="container body-content"><br /><h3>To order something you need to select something</h3></div>
+		    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>To order something you need to select something</h3></div>
 	  	}
 	}
 }

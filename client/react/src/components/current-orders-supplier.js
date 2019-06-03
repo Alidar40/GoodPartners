@@ -61,7 +61,7 @@ class CurrentOrdersSupplier extends React.Component {
 	render() {
 	    if (this.state.currentOrdersFetched) {
 	    	    if (this.state.noCurrentOrders) {
-			    return <div className="container body-content"><br /><h3>You don't have any current orders</h3></div>
+			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any current orders</h3></div>
 		    }
 		    const data_accepted = this.state.accepted;
 		    const data_notAccepted = this.state.notAccepted;
@@ -87,6 +87,8 @@ class CurrentOrdersSupplier extends React.Component {
 				      id: "accept",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-success"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Accept"
 					  }}
@@ -110,6 +112,8 @@ class CurrentOrdersSupplier extends React.Component {
 				      id: "decline",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-danger"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Decline"
 					  }}
@@ -239,15 +243,16 @@ class CurrentOrdersSupplier extends React.Component {
 				/>
 		    }
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
 				<h3>Not accepted</h3>
 				{notAcceptedTable}
+				<br/>
 				<h3>Accepted</h3>
 				{acceptedTable}
 			    </div>
 			    );
 		  } else {
-		    return <div className="container body-content"><br /><h3>Loading content</h3></div>
+		    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>Loading content</h3></div>
 	  	}
 	}
 }

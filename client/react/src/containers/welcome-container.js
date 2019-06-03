@@ -5,7 +5,6 @@ import { Redirect } from 'react-router-dom'
 import Cookies from 'js-cookie';
 
 import Login from '../components/login'
-import Welcome from '../components/welcome';
 import { handleLogin } from '../store/actions/authentication-actions';
 
 class WelcomeContainer extends React.Component {
@@ -39,32 +38,18 @@ class WelcomeContainer extends React.Component {
 	    }
 	}
 
-        if (this.props.location.pathname === "/login") {
-
-            greeting = <div>
+        if (user.isLoggingOut) {
+	    this.props.user.isLoggingOut = false;
+	    this.forceUpdate()
+        }
+        return (
+            <div className="container jumbotron form-group" style={{ display: "flex", "flexDirection": "row", background: "white" }}>
                 <Login isLoginRequestFailed={this.props.user.isLoginRequestFailed}
                     error={this.props.user.error}
                     user={this.props.user}
                     dispatch={this.props.dispatch}
                     handleLogin={handleLogin}
                     history={this.props.history}/>
-            </div>
-        } 
-
-        if (this.props.location.pathname === "/") {
-            if (user.isLoggingOut) {
-                this.props.user.isLoggingOut = false;
-                this.props.history.push("/login");
-                return(<div></div>)
-            }
-
-	    return <Welcome 
-	    		history={this.props.history}/>
-        } 
-        
-        return (
-            <div>
-                {greeting}
             </div>
         )
     }

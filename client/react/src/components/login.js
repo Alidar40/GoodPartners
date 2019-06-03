@@ -40,24 +40,24 @@ class Login extends React.Component {
 	    }
 
 	    render() {
-		return <div>
+		return <div className="container jumbotron form-group" style={{ display: "flex", "flexDirection": "row", background: "white" }}>
 		    <div>
 			<h1>Welcome to GoodPartners</h1>
 		    </div>
-		    <div className="container jumbotron form-group" style={{ "marginLeft": "10%", "maxWidth": "50%" }}>
+		    <div className="container jumbotron form-group" style={{ "marginLeft": "10%", "maxWidth": "50%", background: "#e6f2ff" }}>
 			<form onSubmit={this.handleLoginClick} style={{ padding: "20px" }}>
 			    <LoginFailSpan isLoginRequestFailed={this.props.isLoginRequestFailed} />
 
 			    <div className="form-group">
 				<label htmlFor="email">Email address</label>
-				<input type="email" value={this.state.email} onChange={this.handleEmailChange} className="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email"></input>
+				<input required type="email" value={this.state.email} onChange={this.handleEmailChange} className="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email"></input>
 				<small id="emailHelp" className="form-text text-muted">We'll never share your email with anyone else.</small>
 			    </div>
 			    <div className="form-group">
 				<label htmlFor="password">Password</label>
-				<input type="password" value={this.state.password} onChange={this.handlePasswordChange} className="form-control" id="password" placeholder="Password"></input>
+				<input required type="password" value={this.state.password} onChange={this.handlePasswordChange} className="form-control" id="password" placeholder="Password"></input>
 			    </div>
-			    <input style={{ width: "100%" }} className="btn btn-primary " type="submit" value="Log in" />
+			    <input style={{ width: "100%" }} className="btn btn-outline-info " type="submit" value="Log in" />
 			    <hr />
 			    <small className="form-text text-muted">Don't have an account? So create!</small>
 			    <input onClick={this.handleSignUpClick} type="button" style={{ width: "100%" }} className="btn btn-primary btn-sm" value="Sign up" />

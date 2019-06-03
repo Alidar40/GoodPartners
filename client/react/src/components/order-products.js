@@ -70,7 +70,8 @@ class OrderProducts extends React.Component {
 	    if (this.state.pricelistFetched) {
 		    const data = this.state.pricelist;
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+
 				<h3>Select products</h3>
 				<ReactTable
 				  data={data}
@@ -104,7 +105,10 @@ class OrderProducts extends React.Component {
 				  defaultPageSize={10}
 				  className="-striped -highlight"
 				/>
-			    <button onClick={this.handleFinishClick}>Finish</button>
+			    <button onClick={this.handleFinishClick}
+					className="btn btn-success btn-lg"
+					style={{"marginLeft":"90%", "marginTop":"10px"}}
+			    		>Finish</button>
 			    </div>
 			    );
 		  } else {

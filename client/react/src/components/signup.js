@@ -123,7 +123,8 @@ class Signup extends React.Component {
 	}
 
 	SignupForm() {
-		return <div>
+		return <div className="container jumbotron form-group" style={{ background: "white" }}>
+				<h2 style={{"border-bottom": "3px solid #88c149", "margin-bottom": "20px"}}>Sign up</h2>
 				<form onSubmit={this.handleSubmitClick}>
 					    <div className="form-group">
 						<input required value={this.state.firstName} onChange={this.handleFirstNameChange} type="text" className="form-control" placeholder="First name" />
@@ -160,7 +161,7 @@ class Signup extends React.Component {
 					    <div className="form-group">
 						<input required type="email" value={this.state.companyEmail} onChange={this.handleCompanyEmailChange} className="form-control" placeholder="Company email" />
 					    </div>
-					    <input style={{ width: "100%" }} className="btn btn-primary " type="submit" value="Create account" />
+					    <input style={{ width: "100%" }} className="btn btn-success " type="submit" value="Create account" />
 				</form>
 			</div>
 	}

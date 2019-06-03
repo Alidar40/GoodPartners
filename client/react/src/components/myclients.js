@@ -6,7 +6,7 @@ import "react-table/react-table.css";
 import { formatJsonDateToUTC } from '../utils/date';
 
 function FindClientsBtn(props) {
-	return (<button onClick={props.onClick}>Find clients</button>);
+	return (<button class="btn btn-success" onClick={props.onClick}>Find clients</button>);
 }
 
 class MyClients extends React.Component {
@@ -16,11 +16,6 @@ class MyClients extends React.Component {
 	this.state = {
 	    clients: null,
 	    clientsFetched: false,
-	}
-	this.request = {
-		insert: [],
-		update: [],
-		delete: []
 	}
 	this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
 
@@ -49,20 +44,24 @@ class MyClients extends React.Component {
 	render() {
 	    if (this.state.clientsFetched) {
 	    	    if(this.state.clients == "EMPTY") {
-		    	return(<div>
+		    	return(<div className="container jumbotron form-group" style={{  background: "white", "marginBottom":"5px" }} >
 				   <h3>You don't have any clients</h3>
+				   <br/>
 				   <FindClientsBtn onClick={this.handleFindClientsClick} />
 				</div>)
 		    }
 
 		    var head
 		    if (this.props.location.pathname === "/clients") {
-			head = <div>
+			head = <div style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"5px" }}>
 				<h3>My clients</h3>
-			        <button onClick={() => {this.props.history.push("/clients/find")}}>Find new clients</button>
+			        <button 
+					class="btn btn-success" 
+					style={{"marginLeft":"5px"}}
+					onClick={() => {this.props.history.push("/clients/find")}}>Find new clients</button>
 				</div>
 		    } else if (this.props.location.pathname === "/buyer/placeorder/client") {
-		    	head = <div>
+		    	head = <div style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"5px" }} >
 				<h3>Choose a client</h3>
 				</div>
 		    }
@@ -70,7 +69,7 @@ class MyClients extends React.Component {
 
 		    const data = this.state.clients;
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
 				{head}
 				<ReactTable
 				  data={data}
@@ -88,6 +87,8 @@ class MyClients extends React.Component {
 				      id: "make order",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-success"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "Make order"
 					  }}

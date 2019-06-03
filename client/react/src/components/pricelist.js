@@ -123,7 +123,8 @@ class Pricelist extends React.Component {
 	    if (this.state.pricelistFetched) {
 		    const data = this.state.pricelist;
 		    return (
-		      	<div>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+				<h3>Pricelist</h3>
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -152,6 +153,8 @@ class Pricelist extends React.Component {
 				      id: "delete",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-danger"
+					  style={{"marginLeft":"35%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "delete"
 					  }}
@@ -175,8 +178,14 @@ class Pricelist extends React.Component {
 				  defaultPageSize={10}
 				  className="-striped -highlight"
 				/>
-			    <button onClick={this.handleUpdateClick}>Update pricelist</button>
-			    <button onClick={this.handleAddItemClick}>Add item</button>
+			    <br/>
+			    <button onClick={this.handleUpdateClick}
+					  className="btn btn-success btn-lg"
+					  style={{"marginRight":"5%"}}
+			    		>Update pricelist</button>
+			    <button onClick={this.handleAddItemClick}
+					  className="btn btn-primary btn-lg"
+			    		>Add item</button>
 			    </div>
 			    );
 		  } else {

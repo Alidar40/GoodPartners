@@ -6,43 +6,70 @@ import { withRouter } from 'react-router-dom';
 import { handleLogout } from '../store/actions/authentication-actions';
 
 function LogoutButton(props) {
-    return (<button onClick={props.onClick}>Logout</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-danger"
+			style={{"width":"30%", "marginLeft":"80%"}}
+			><legend>Logout</legend></button>);
 }
 
 function OrdersHistoryBtn(props) {
-	return (<button onClick={props.onClick}>Orders history</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%", "marginRight":"5%"}}
+			><legend>Orders history</legend></button>);
 }
 
 function PricelistBtn(props) {
-	return (<button onClick={props.onClick}>Price list</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%", "marginRight":"5%"}}
+			><legend>Price list</legend></button>);
 }
 
 function MyClientsBtn(props) {
-	return (<button onClick={props.onClick}>My clients</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%", "marginLeft":"5%"}}
+			><legend>My clients</legend></button>);
 }
 
 function FindClientsBtn(props) {
-	return (<button onClick={props.onClick}>Find clients</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%", "height":"100%","marginLeft":"5%"}}
+			><legend>Find clients</legend></button>);
 }
 
 function PlaceorderBtn(props) {
-	return (<button onClick={props.onClick}>Place order</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%", "marginRight":"5%"}}
+			><legend>Place order</legend></button>);
 }
 
 function NotificationsBtn(props) {
-	return (<button onClick={props.onClick}>Notifications: {props.count}</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%"}}
+			><legend>Notifications: <span className="badge badge-secondary">{props.count}</span></legend></button>);
 }
 
 function CurrentOrdersBtn(props) {
-	return (<button onClick={props.onClick} >Current orders<br/>
-		<span>not accepted: {props.unaccepted}</span><br/>
-		<span>accepted: {props.accepted}</span><br/>
-		<span>closed: {props.closed}</span><br/>
+	return (<button onClick={props.onClick} 
+			className="btn btn-outline-primary"
+			style={{"width":"30%","height":"100%", "marginRight":"5%"}}
+			><legend>Current orders</legend>
+		<span className="badge badge-warning" style={{"width":"100%"}}>not accepted: {props.unaccepted}</span><br/>
+		<span className="badge badge-success" style={{"width":"100%"}}>accepted: {props.accepted}</span><br/>
+		<span className="badge badge-secondary" style={{"width":"100%"}}>closed: {props.closed}</span><br/>
 		</button>);
 }
 
 function InvitationsBtn(props) {
-	return (<button onClick={props.onClick}>Invitations: {props.count}</button>);
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%"}}
+			><legend>Invitations: <span className="badge badge-secondary">{props.count}</span></legend></button>);
 }
 
 class Dashboard extends React.Component {
@@ -140,26 +167,36 @@ class Dashboard extends React.Component {
 			placeorderBtn = <PlaceorderBtn onClick={this.handlePlaceorderClick} />
 		}
 
-		return <div>
+		return <div className="container jumbotron form-group" style={{ background: "white" }}>
 			<h2>{this.isSupplier}</h2>	
-			<LogoutButton onClick={this.handleLogoutClick} />
-			<OrdersHistoryBtn onClick={this.handleOrdersHistoryClick} />
-			{pricelistBtn}
-			<MyClientsBtn onClick={this.handleMyClientsClick} />
-			<FindClientsBtn onClick={this.handleFindClientsClick} />
-			{placeorderBtn}
-			<NotificationsBtn 
-				onClick={this.handleNotificationsClick}
-				count={this.state.notifications} />
-			<CurrentOrdersBtn 
-				onClick={this.handleCurrentOrdersClick}
-				unaccepted={this.state.unaccepted}
-				accepted={this.state.accepted}
-				closed={this.state.closed}
-			/>
-			<InvitationsBtn 
-				onClick={this.handleInvitationsClick}
-				count={this.state.invitations} />
+			<div className="container jumbotron form-group" style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
+				<CurrentOrdersBtn 
+					onClick={this.handleCurrentOrdersClick}
+					unaccepted={this.state.unaccepted}
+					accepted={this.state.accepted}
+					closed={this.state.closed}
+				/>
+				<NotificationsBtn 
+					onClick={this.handleNotificationsClick}
+					count={this.state.notifications} />
+				<MyClientsBtn onClick={this.handleMyClientsClick} />
+			</div>
+			<div className="container jumbotron form-group" style={{"height":"258px", display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
+				{pricelistBtn}
+				{placeorderBtn}
+				<InvitationsBtn 
+					onClick={this.handleInvitationsClick}
+					count={this.state.invitations} />
+				<FindClientsBtn onClick={this.handleFindClientsClick} />
+			</div>
+			<div className="container jumbotron form-group" style={{"height":"258px",  display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
+				<OrdersHistoryBtn onClick={this.handleOrdersHistoryClick} />
+			</div>
+			<div className="container jumbotron form-group" style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
+				<br /> <br/>
+				<LogoutButton onClick={this.handleLogoutClick}/>
+			</div>
+
 		</div>
 	}
 }
