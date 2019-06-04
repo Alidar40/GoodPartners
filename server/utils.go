@@ -8,6 +8,8 @@ import(
 	"net/http"
 	"regexp"
 	"time"
+	"net/smtp"
+	"math/rand"
 
 	"github.com/gocraft/web"
 	"github.com/golang/glog"
@@ -131,4 +133,46 @@ func Notify(whomId string, message string) (error) {
 		return err
 	}
 	return nil
+}
+
+func SendEmail(to string, subject string, msg string) (error) {
+	hostname := "smtp.gmail.com"
+	adminEmail := "alihotel.mailservice@gmail.com"
+	auth := smtp.PlainAuth(
+		"",
+		adminEmail,
+		"vbnm4321",
+		hostname,
+	)
+
+	err := smtp.SendMail(
+		hostname+":587",
+		auth,
+		adminEmail,
+		[]string{to},
+		[]byte("To: " + to + "\n" +
+			"Subject: " + subject + "\n" +
+			"\n" +
+			msg + "\n"),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GeneratePassword() (string){
+	rand.Seed(time.Now().UnixNano())
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ" +
+	    "abcdefghijklmnopqrstuvwxyzåäö" +
+	    "0123456789")
+	length := 8
+	var b strings.Builder
+	for i := 0; i < length; i++ {
+	    b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+	str := b.String()
+	return str
 }

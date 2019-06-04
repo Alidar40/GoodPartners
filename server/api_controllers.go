@@ -111,6 +111,14 @@ type Invitation struct {
 	Sender		Company	`json:"sender"`
 }
 
+type EmployeeInvitation struct {
+	CompanyId	string	`json:"companyId"`
+	Email		string	`json:"email"`
+	FirstName	string	`json:"firstName"`
+	LastName	string	`json:"lastName"`
+	Title		string	`json:"title"`
+}
+
 func (c *Context) PostRegisterCtrl(rw web.ResponseWriter, req *web.Request) {
 	var regForm	RegisterForm
 
@@ -215,7 +223,8 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 	pswdHashStr := hex.EncodeToString(pswdHash[:])
 
 	var id, companyId string
-	err = db.QueryRow(`SELECT id, company_id FROM users WHERE email = $1 and password_hash = $2;`, loginForm.Email, pswdHashStr).Scan(&id, &companyId)
+	var roleId int
+	err = db.QueryRow(`SELECT id, company_id, role_id FROM users WHERE email = $1 and password_hash = $2;`, loginForm.Email, pswdHashStr).Scan(&id, &companyId, &roleId)
 	if (err != nil) {
 		if (err == sql.ErrNoRows) {
 			c.Error = errors.Wrap(err, "authenticating with wrong credentials")
@@ -264,10 +273,18 @@ func (c *Context) Login(rw web.ResponseWriter, req *web.Request) {
 		},
 	}
 
+	var role string
+	if roleId == 2 {
+		role = "owner"
+	} else {
+		role = "employee"
+	}
+
 	http.SetCookie(rw, &http.Cookie{Name: "id", Value: id, Path: "/"})
 	http.SetCookie(rw, &http.Cookie{Name: "companyId", Value: companyId, Path: "/"})
 	http.SetCookie(rw, &http.Cookie{Name: "token", Value: tokenRaw.String(), Path: "/"})
 	http.SetCookie(rw, &http.Cookie{Name: "isSupplier", Value: isSupplier, Path: "/"})
+	http.SetCookie(rw, &http.Cookie{Name: "role", Value: role, Path: "/"})
 	rw.WriteHeader(http.StatusOK)
 	c.Reply(rw, req, reply)
 }
@@ -1451,4 +1468,77 @@ func (c *Context) GetInvitations(rw web.ResponseWriter, req *web.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}
 	c.Reply(rw, req, invitations)
+}
+
+func (c *Context) InviteEmployee(rw web.ResponseWriter, req *web.Request) {
+	var ei	EmployeeInvitation
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&ei)
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing employee invitation form")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	companyId, err := req.Cookie("companyId")
+	if err != nil {
+		c.Error = errors.Wrap(err, "parsing company id")
+		rw.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	tokenRaw, err := uuid.NewV4()
+	if (err != nil) {
+		c.Error = errors.Wrap(err, "generating token")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.Exec(`INSERT INTO employee_invitations 
+				(token, company_id, email, first_name, last_name, title)
+			  VALUES ($1, $2, $3, $4, $5, $6);`, tokenRaw.String(), companyId.Value, ei.Email, ei.FirstName, ei.LastName, ei.Title)
+	if err != nil {
+		c.Error = errors.Wrap(err, "inserting employee invitation")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		c.Error = errors.Wrap(err, "sending email")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	SendEmail(ei.Email, "Invitation from employer - GoodPartners", "You were invited to GoodPartners\nFolow the link to activate your account: http://localhost:8000/api/invitations/employee/activate/" + tokenRaw.String())
+	rw.WriteHeader(http.StatusOK)
+	c.Reply(rw, req, ei)
+}
+
+func (c *Context) ActivateEmployee(rw web.ResponseWriter, req *web.Request){
+	token := req.PathParams["token"]
+
+	var ei EmployeeInvitation
+	err := db.QueryRow(`SELECT email, first_name, last_name, title, company_id 
+			    FROM employee_invitations 
+			    WHERE token=$1`, token).Scan(&ei.Email, &ei.FirstName, &ei.LastName, &ei.Title, &ei.CompanyId)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying employee invitation token")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	pswd := GeneratePassword()
+	pswdHash := sha256.Sum256([]byte(pswd))
+	pswdHashStr := hex.EncodeToString(pswdHash[:])
+	_, err = db.Exec(`INSERT INTO users (email, password_hash, first_name, last_name, company_id, role_id, title)
+			VALUES ($1, $2, $3, $4, $5, $6, $7);`, ei.Email, pswdHashStr, ei.FirstName, ei.LastName, ei.CompanyId, 3, ei.Title)
+	if err != nil {
+		c.Error = errors.Wrap(err, "inserting employee")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	SendEmail(ei.Email, "Employee registration confrimation - GoodPartners", "Your temporary password: " + pswd)
+	rw.WriteHeader(http.StatusCreated)
+	c.Reply(rw, req, "Registration confirmed")
 }

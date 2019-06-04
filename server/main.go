@@ -43,6 +43,7 @@ func main() {
 	apiRouterUnauthorized := rootRouter.Subrouter(Context{}, "/api")
 	apiRouterUnauthorized.Post("/auth/registration/:typeOfCompany", (*Context).PostRegisterCtrl)
 	apiRouterUnauthorized.Post("/auth/login", (*Context).Login)
+	apiRouterUnauthorized.Get("/invitations/employee/activate/:token", (*Context).ActivateEmployee)
 
 	apiRouter := rootRouter.Subrouter(Context{}, "/api").
 		Middleware((*Context).AuthCheck)
@@ -51,6 +52,7 @@ func main() {
 	apiRouter.Put("/supplier/pricelist/edit", (*Context).EditPricelist)
 	apiRouter.Post("/invitations/partnership/invite/:id", (*Context).InviteCompany)
 	apiRouter.Post("/invitations/partnership/answer/:answer/id/:id", (*Context).AnswerInvitation)
+	apiRouter.Post("/invitations/employee", (*Context).InviteEmployee)
 	apiRouter.Post("/order/make", (*Context).MakeOrder)
 	apiRouter.Post("/order/answer/:answer/id/:id", (*Context).AnswerToOrder)
 	apiRouter.Post("/order/close/:id", (*Context).CloseOrder)
@@ -61,6 +63,7 @@ func main() {
 	apiRouter.Get("/status", (*Context).GetStatus)
 	apiRouter.Get("/notifications", (*Context).GetNotifications)
 	apiRouter.Get("/invitations", (*Context).GetInvitations)
+
 
 	currentRoot, _ := os.Getwd()
 	indexRoot := path.Dir(currentRoot)

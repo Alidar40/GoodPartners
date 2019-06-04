@@ -17,6 +17,7 @@ import Notifications from '../components/notifications';
 import CurrentOrdersBuyer from '../components/current-orders-buyer';
 import CurrentOrdersSupplier from '../components/current-orders-supplier';
 import Invitations from '../components/invitations';
+import InviteEmployee from '../components/invite-employee';
 
 import store from '../store/app-store';
 import { handleLogin } from '../store/actions/authentication-actions'
@@ -47,6 +48,7 @@ class App extends React.Component {
                             <Route exact path="/buyer/orders/current" component={CurrentOrdersBuyer} />
                             <Route exact path="/supplier/orders/current" component={CurrentOrdersSupplier} />
                             <Route exact path="/invitations" component={Invitations} />
+                            <Route exact path="/invite/employee" component={InviteEmployee} />
                         </Switch>
                     </div>
                </BrowserRouter>

@@ -72,6 +72,13 @@ function InvitationsBtn(props) {
 			><legend>Invitations: <span className="badge badge-secondary">{props.count}</span></legend></button>);
 }
 
+function InviteEmployeeBtn(props) {
+	return (<button onClick={props.onClick}
+			className="btn btn-outline-primary"
+			style={{"width":"30%"}}
+			><legend>Invite employee</legend></button>);
+}
+
 class Dashboard extends React.Component {
 	constructor(props) {
 		super(props);
@@ -84,6 +91,7 @@ class Dashboard extends React.Component {
 			invitations: 0,
 		}
 		this.isSupplier = Cookies.get('isSupplier')
+		this.role = Cookies.get('role')
 		this.handleLogoutClick = this.handleLogoutClick.bind(this);
 		this.handleOrdersHistoryClick = this.handleOrdersHistoryClick.bind(this);
 		this.handlePricelistClick = this.handlePricelistClick.bind(this);
@@ -93,6 +101,7 @@ class Dashboard extends React.Component {
 		this.handleNotificationsClick = this.handleNotificationsClick.bind(this);
 		this.handleCurrentOrdersClick = this.handleCurrentOrdersClick.bind(this);
 		this.handleInvitationsClick = this.handleInvitationsClick.bind(this);
+		this.handleInviteEnployeeClick = this.handleInviteEmployeeClick.bind(this);
 	}
 
 	componentWillMount() {
@@ -160,6 +169,10 @@ class Dashboard extends React.Component {
 		this.props.history.push("/invitations")
 	}
 
+	handleInviteEmployeeClick() {
+		this.props.history.push("/invite/employee")
+	}
+
 	render() {
 		var pricelistBtn
 		var placeorderBtn
@@ -167,6 +180,11 @@ class Dashboard extends React.Component {
 			pricelistBtn = <PricelistBtn onClick={this.handlePricelistClick} />
 		} else {
 			placeorderBtn = <PlaceorderBtn onClick={this.handlePlaceorderClick} />
+		}
+
+		var inviteEmployeeBtn = <div></div>
+		if (this.role == "owner") {
+			inviteEmployeeBtn = <InviteEmployeeBtn onClick={this.handleInviteEnployeeClick} />
 		}
 
 		return <div className="container jumbotron form-group" style={{ background: "white" }}>
@@ -193,6 +211,7 @@ class Dashboard extends React.Component {
 			</div>
 			<div className="container jumbotron form-group" style={{"height":"258px",  display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
 				<OrdersHistoryBtn onClick={this.handleOrdersHistoryClick} />
+				{inviteEmployeeBtn}
 			</div>
 			<div className="container jumbotron form-group" style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
 				<br /> <br/>
