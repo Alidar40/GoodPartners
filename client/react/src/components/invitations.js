@@ -14,6 +14,7 @@ class Invitations extends React.Component {
 	    invitations: null,
 	    invitationsFetched: false,
 	}
+	this.isSupplier = Cookies.get('isSupplier')
 
 	fetch('/api/invitations', {
 		method: 'GET',
@@ -141,10 +142,49 @@ class Invitations extends React.Component {
 				    if (row.original.sender.website != "") {
 				    	website = <p>Website: <a href={"http://"+row.original.sender.website}>{row.original.sender.website}</a></p>
 				    }
+
+				    const entries = row.original.sender.pricelist
+				    var pricelist 
+				    if (this.isSupplier == "false") {
+					pricelist = <ReactTable 
+						data={entries}
+						columns={[
+						  {
+						    Header: "Name",
+						    accessor: "name",
+						  },
+						  {
+						    Header: "Price",
+						    accessor: "price",
+						  },
+						  {
+						    Header: "Count",
+						    accessor: "count",
+						  },
+						  {
+						    Header: "Units",
+						    accessor: "units",
+						  },
+						  {
+						    Header: "Description",
+						    accessor: "description",
+						  },
+						  {
+						    Header: "Category",
+						    accessor: "category",
+						  },
+						  
+						]}
+						defaultPageSize={5}
+						  className="-striped -highlight"
+					/>
+				    }
+
 				    return (
 				      <div style={{ padding: "20px" }}>
 				      	{email}
 					{website}
+					{pricelist}
 				      </div>
 				    );
 				  }}

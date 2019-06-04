@@ -86,6 +86,7 @@ type Company struct {
 	Description	string	`json:"description"`
 	Website		string	`json:"website"`
 	Email		string	`json:"email"`
+	Pricelist	[]PriceListEntry	`json:"pricelist"`
 }
 
 type Status struct {
@@ -991,6 +992,27 @@ func (c *Context) GetClients(rw web.ResponseWriter, req *web.Request) {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		pl_result, err := db.Query(`SELECT id, company_id, sku, name, units, price, category, description
+					    FROM pricelist
+					    WHERE company_id=$1;`, company.Id)
+		if err != nil {
+			c.Error = errors.Wrap(err, "querying pricelist")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for pl_result.Next() {
+			ple := new(PriceListEntry)
+			err := pl_result.Scan(&ple.Id, &ple.CompanyId, &ple.Sku, &ple.Name, &ple.Units, &ple.Price, &ple.Category, &ple.Description)
+			if err != nil {
+				c.Error = errors.Wrap(err, "scanning pricelist")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			company.Pricelist = append(company.Pricelist, *ple)
+		}
+
 		companies = append(companies, *company)
 
 	}
@@ -1079,8 +1101,28 @@ func (c *Context) FindClients(rw web.ResponseWriter, req *web.Request) {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		companies = append(companies, *company)
 
+		pl_result, err := db.Query(`SELECT id, company_id, sku, name, units, price, category, description
+					    FROM pricelist
+					    WHERE company_id=$1;`, company.Id)
+		if err != nil {
+			c.Error = errors.Wrap(err, "querying pricelist")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for pl_result.Next() {
+			ple := new(PriceListEntry)
+			err := pl_result.Scan(&ple.Id, &ple.CompanyId, &ple.Sku, &ple.Name, &ple.Units, &ple.Price, &ple.Category, &ple.Description)
+			if err != nil {
+				c.Error = errors.Wrap(err, "scanning pricelist")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			company.Pricelist = append(company.Pricelist, *ple)
+		}
+
+		companies = append(companies, *company)
 	}
 
 	if len(companies) == 0 {
@@ -1376,6 +1418,27 @@ func (c *Context) GetInvitations(rw web.ResponseWriter, req *web.Request) {
 			c.Error = errors.Wrap(err, "scanning sender")
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+
+
+		pl_result, err := db.Query(`SELECT id, company_id, sku, name, units, price, category, description
+					    FROM pricelist
+					    WHERE company_id=$1;`, sender.Id)
+		if err != nil {
+			c.Error = errors.Wrap(err, "querying pricelist")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for pl_result.Next() {
+			ple := new(PriceListEntry)
+			err := pl_result.Scan(&ple.Id, &ple.CompanyId, &ple.Sku, &ple.Name, &ple.Units, &ple.Price, &ple.Category, &ple.Description)
+			if err != nil {
+				c.Error = errors.Wrap(err, "scanning pricelist")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			sender.Pricelist = append(sender.Pricelist, *ple)
 		}
 
 		invit.Sender = sender

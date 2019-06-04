@@ -18,6 +18,7 @@ class MyClients extends React.Component {
 	    clients: null,
 	    clientsFetched: false,
 	}
+	this.isSupplier = Cookies.get('isSupplier')
 	this.handleFindClientsClick = this.handleFindClientsClick.bind(this);
 
 	fetch('/api/clients', {
@@ -128,10 +129,49 @@ class MyClients extends React.Component {
 				    if (row.original.website != "") {
 				    	website = <p>Website: <a href={"http://"+row.original.website}>{row.original.website}</a></p>
 				    }
+
+				    const entries = row.original.pricelist
+				    var pricelist 
+				    if (this.isSupplier == "false") {
+					pricelist = <ReactTable 
+						data={entries}
+						columns={[
+						  {
+						    Header: "Name",
+						    accessor: "name",
+						  },
+						  {
+						    Header: "Price",
+						    accessor: "price",
+						  },
+						  {
+						    Header: "Count",
+						    accessor: "count",
+						  },
+						  {
+						    Header: "Units",
+						    accessor: "units",
+						  },
+						  {
+						    Header: "Description",
+						    accessor: "description",
+						  },
+						  {
+						    Header: "Category",
+						    accessor: "category",
+						  },
+						  
+						]}
+						defaultPageSize={5}
+						  className="-striped -highlight"
+					/>
+				    }
+
 				    return (
 				      <div style={{ padding: "20px" }}>
 				      	{email}
 					{website}
+					{pricelist}
 				      </div>
 				    );
 				  }}
