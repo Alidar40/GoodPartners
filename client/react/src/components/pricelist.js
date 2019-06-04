@@ -97,7 +97,7 @@ class Pricelist extends React.Component {
     }
 
     handleAddItemClick() {
-		this.state.pricelist.push({id: "", sku:"_", name: "_", units: "_", price: 0})
+		this.state.pricelist.push({id: "", sku:"_", name: "_", units: "_", price: 0, category: "_", description: "_"})
 		this.setState({pricelist: this.state.pricelist})
     }
 
@@ -149,12 +149,22 @@ class Pricelist extends React.Component {
 				      Cell: this.renderEditable
 				    },
 				    {
+				      Header: "Category",
+				      accessor: "category",
+				      Cell: this.renderEditable
+				    },
+				    {
+				      Header: "Description",
+				      accessor: "description",
+				      Cell: this.renderEditable
+				    },
+				    {
 				      Header: "Delete",
 				      id: "delete",
 				      accessor: d =>
 					<button
 					  className="btn btn-outline-danger"
-					  style={{"marginLeft":"35%"}}
+					  style={{"marginLeft":"25%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "delete"
 					  }}

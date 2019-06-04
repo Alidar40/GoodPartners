@@ -102,11 +102,20 @@ class OrderProducts extends React.Component {
 				      accessor: "price",
 				    },
 				    {
+				      Header: "Category",
+				      accessor: "category",
+				    },
+				    {
+				      Header: "Description",
+				      accessor: "description",
+				    },
+				    {
 				      Header: "Count",
 				      id: "count",
 				      accessor: d => <input value={d["count"]} 
 				      			type="number" step="1" min="0" 
 							placeholder="Count" 
+							style={{"maxWidth":"100%"}}
 							onChange={(e) => this.handleCountChange(e, d)} 
 							/>
 				    }

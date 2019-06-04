@@ -100,6 +100,14 @@ class OrderFinish extends React.Component {
 				      accessor: "price",
 				    },
 				    {
+				      Header: "Category",
+				      accessor: "category",
+				    },
+				    {
+				      Header: "Description",
+				      accessor: "description",
+				    },
+				    {
 				      Header: "Count",
 				      accessor: "count",
 				    }

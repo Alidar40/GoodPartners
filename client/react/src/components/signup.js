@@ -87,7 +87,7 @@ class Signup extends React.Component {
 	}
 
         handleAddItemClick() {
-		this.state.priceList.push({id: "", sku:"_", name: "_", units: "_", price: 0})
+		this.state.priceList.push({id: "", sku:"_", name: "_", units: "_", price: 0, category: "_", description: "_"})
 		this.setState({priceList: this.state.priceList})
     	}
 
@@ -124,7 +124,7 @@ class Signup extends React.Component {
 
 	SignupForm() {
 		return <div className="container jumbotron form-group" style={{ background: "white" }}>
-				<h2 style={{"border-bottom": "3px solid #88c149", "margin-bottom": "20px"}}>Sign up</h2>
+				<h2 style={{"borderBottom": "3px solid #88c149", "marginBottom": "20px"}}>Sign up</h2>
 				<form onSubmit={this.handleSubmitClick}>
 					    <div className="form-group">
 						<input required value={this.state.firstName} onChange={this.handleFirstNameChange} type="text" className="form-control" placeholder="First name" />
@@ -206,8 +206,8 @@ class Signup extends React.Component {
 	PricelistForm() {
 		    const data = this.state.priceList
 		    return (
-		      	<div>
-				<p>To finish the registration, please add at least one item to your pricelist</p>
+		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+				<h3>To finish the registration, please add at least one item to your pricelist</h3>
 				<ReactTable
 				  data={data}
 				  columns={[
@@ -232,10 +232,22 @@ class Signup extends React.Component {
 				      Cell: this.renderEditable
 				    },
 				    {
+				      Header: "Category",
+				      accessor: "category",
+				      Cell: this.renderEditable
+				    },
+				    {
+				      Header: "Description",
+				      accessor: "description",
+				      Cell: this.renderEditable
+				    },
+				    {
 				      Header: "Delete",
 				      id: "delete",
 				      accessor: d =>
 					<button
+					  className="btn btn-outline-danger"
+					  style={{"marginLeft":"25%"}}
 					  dangerouslySetInnerHTML={{
 					    __html: "delete"
 					  }}
@@ -252,8 +264,18 @@ class Signup extends React.Component {
 				  defaultPageSize={10}
 				  className="-striped -highlight"
 				/>
-			    <button onClick={this.handleFinishClick}>Finish registration</button>
-			    <button onClick={this.handleAddItemClick}>Add item</button>
+			    <br/>
+			    <button 
+			    	onClick={this.handleFinishClick}
+			  	className="btn btn-success btn-lg">
+				Finish registration
+			    </button>
+			    <button 
+			    	onClick={this.handleAddItemClick}
+			  	className="btn btn-primary btn-lg"
+				style={{"marginLeft":"5%"}}>
+				Add item
+			    </button>
 			    </div>
 			    );
 	}
