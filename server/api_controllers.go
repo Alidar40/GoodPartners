@@ -865,9 +865,13 @@ func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
 
 	var result *sql.Rows
 	if isSupplier.Value == "true" {
-		result, err = db.Query(`SELECT * FROM orders WHERE supplier_id=$1 and is_closed=true;`, companyId.Value)
+		result, err = db.Query(`SELECT id, supplier_id, buyer_id, date_ordered, comment, is_accepted, date_accepted, is_closed, date_closed
+					FROM orders 
+					WHERE supplier_id=$1 and is_closed=true;`, companyId.Value)
 	} else {
-		result, err = db.Query(`SELECT * FROM orders WHERE buyer_id=$1 and is_closed=true;`, companyId.Value)
+		result, err = db.Query(`SELECT id, supplier_id, buyer_id, date_ordered, comment, is_accepted, date_accepted, is_closed, date_closed
+					FROM orders 
+					WHERE buyer_id=$1 and is_closed=true;`, companyId.Value)
 	}
 	if err != nil {
 		c.Error = errors.Wrap(err, "querying orders history")
@@ -909,6 +913,26 @@ func (c *Context) GetOrdersHistory (rw web.ResponseWriter, req *web.Request) {
 			companies[order.BuyerId] = companyName
 		}
 		order.BuyerName = companyName
+
+		entries_res, err := db.Query(`SELECT id, sku, name, units, price, category, description, count
+					      FROM order_items
+					      WHERE order_id=$1;`, order.Id)
+		if err != nil {
+			c.Error = errors.Wrap(err, "querying order items")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for entries_res.Next() {
+			var en PriceListEntry
+			err = entries_res.Scan(&en.Id, &en.Sku, &en.Name, &en.Units, &en.Price, &en.Category, &en.Description, &en.Count)
+			if err != nil {
+				c.Error = errors.Wrap(err, "scanning order item")
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			order.Entries = append(order.Entries, en)
+		}
 
 		ordersHistory = append(ordersHistory, *order)
 	}

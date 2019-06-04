@@ -65,6 +65,45 @@ class OrdersHistory extends React.Component {
                 data={ordersHistory}
 	        defaultPageSize={10}
 	        className="-striped -highlight"
+		  SubComponent={row => {
+		    const entries = row.original.entries
+		    return (
+			<div style={{ padding: "20px" }}>
+				<ReactTable 
+					data={entries}
+					columns={[
+					  {
+					    Header: "Name",
+					    accessor: "name",
+					  },
+					  {
+					    Header: "Price",
+					    accessor: "price",
+					  },
+					  {
+					    Header: "Count",
+					    accessor: "count",
+					  },
+					  {
+					    Header: "Units",
+					    accessor: "units",
+					  },
+					  {
+					    Header: "Description",
+					    accessor: "description",
+					  },
+					  {
+					    Header: "Category",
+					    accessor: "category",
+					  },
+					  
+					]}
+					defaultPageSize={5}
+					  className="-striped -highlight"
+				/>
+			</div>
+		    );
+		  }}
             />
         </div>
     }
