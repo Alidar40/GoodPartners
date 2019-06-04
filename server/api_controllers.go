@@ -89,6 +89,7 @@ type Company struct {
 }
 
 type Status struct {
+	CompanyName	string	`json:"companyName"`
 	Notifications	int	`json:"notifications"`
 	Unaccepted	int	`json:"unaccepted"`
 	Accepted	int	`json:"accepted"`
@@ -1082,6 +1083,16 @@ func (c *Context) GetStatus(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
+	var companyName string
+	err = db.QueryRow(`SELECT name
+				 FROM companies 
+				 WHERE id=$1;`, companyId.Value).Scan(&companyName)
+	if err != nil {
+		c.Error = errors.Wrap(err, "querying company name")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	var notifsCount int
 	err = db.QueryRow(`SELECT COUNT(is_read) 
 				 FROM notifications 
@@ -1140,6 +1151,7 @@ func (c *Context) GetStatus(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 	reply := &Status {
+		CompanyName: companyName,
 		Notifications: notifsCount,
 		Unaccepted: unacceptedCount,
 		Accepted: acceptedCount,

@@ -76,6 +76,7 @@ class Dashboard extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
+			companyName: "",
 			notifications: 0,
 			unaccepted: 0,
 			accepted: 0,
@@ -105,6 +106,7 @@ class Dashboard extends React.Component {
 		})
 		.then(data => {
 			this.setState({
+					companyName: data.companyName,
 					notifications: data.notifications,
 					unaccepted: data.unaccepted,
 					accepted: data.accepted,
@@ -168,7 +170,7 @@ class Dashboard extends React.Component {
 		}
 
 		return <div className="container jumbotron form-group" style={{ background: "white" }}>
-			<h2>{this.isSupplier}</h2>	
+			<h1>{this.state.companyName}</h1>	
 			<div className="container jumbotron form-group" style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"0px" }}>
 				<CurrentOrdersBtn 
 					onClick={this.handleCurrentOrdersClick}
