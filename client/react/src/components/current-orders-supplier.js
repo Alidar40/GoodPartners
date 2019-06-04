@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
@@ -60,8 +61,14 @@ class CurrentOrdersSupplier extends React.Component {
 
 	render() {
 	    if (this.state.currentOrdersFetched) {
+		    var backBtn = <Link to="/supplier/dashboard">
+					<button 
+						className="btn btn-secondary"
+						style={{"float":"right"}}
+						>Back to dashboard</button>
+				</Link> 
 	    	    if (this.state.noCurrentOrders) {
-			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any current orders</h3></div>
+			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any current orders</h3> <br/> {backBtn} </div>
 		    }
 		    const data_accepted = this.state.accepted;
 		    const data_notAccepted = this.state.notAccepted;
@@ -244,6 +251,7 @@ class CurrentOrdersSupplier extends React.Component {
 		    }
 		    return (
 		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+				{backBtn}
 				<h3>Not accepted</h3>
 				{notAcceptedTable}
 				<br/>

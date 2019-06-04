@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
@@ -43,26 +44,44 @@ class MyClients extends React.Component {
 
 	render() {
 	    if (this.state.clientsFetched) {
+		    var toDashboard
+		    if (this.isSupplier == "true") {
+		    	toDashboard = "/supplier/dashboard"
+		    } else {
+		    	toDashboard = "/buyer/dashboard"
+		    }
+		    var backBtn = <Link to={toDashboard}  
+		          style={{"marginLeft":"auto", "marginRight":"0"}}>
+			    <button 
+				    className="btn btn-secondary"
+				    style={{"height":"100%"}}
+				    >Back to dashboard</button>
+		    </Link> 
+
 	    	    if(this.state.clients == "EMPTY") {
 		    	return(<div className="container jumbotron form-group" style={{  background: "white", "marginBottom":"5px" }} >
 				   <h3>You don't have any clients</h3>
 				   <br/>
+				   {backBtn}
 				   <FindClientsBtn onClick={this.handleFindClientsClick} />
 				</div>)
 		    }
+
 
 		    var head
 		    if (this.props.location.pathname === "/clients") {
 			head = <div style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"5px" }}>
 				<h3>My clients</h3>
+				{backBtn}
 			        <button 
 					class="btn btn-success" 
-					style={{"marginLeft":"5px"}}
+					style={{"marginLeft":"5px", "marginRight":"0"}}
 					onClick={() => {this.props.history.push("/clients/find")}}>Find new clients</button>
 				</div>
 		    } else if (this.props.location.pathname === "/buyer/placeorder/client") {
 		    	head = <div style={{ display: "flex", "flexDirection": "row", background: "white", "marginBottom":"5px" }} >
 				<h3>Choose a client</h3>
+				{backBtn}
 				</div>
 		    }
 			

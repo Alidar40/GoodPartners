@@ -1,6 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import { TacoTable, DataType, SortDirection, Formatters, Summarizers, TdClassNames } from 'react-taco-table';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 
@@ -185,7 +185,14 @@ class Pricelist extends React.Component {
 			    		>Update pricelist</button>
 			    <button onClick={this.handleAddItemClick}
 					  className="btn btn-primary btn-lg"
+					  style={{"marginRight":"5%"}}
 			    		>Add item</button>
+			    <Link to="/supplier/dashboard">
+			    	<button 
+					style={{"float":"right"}}
+					className="btn btn-secondary btn-lg">
+				Back to dashboard</button>
+			    </Link> 
 			    </div>
 			    );
 		  } else {

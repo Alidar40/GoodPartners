@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
@@ -72,7 +73,15 @@ class OrderProducts extends React.Component {
 		    return (
 		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
 
+				<div>
+				<Link to="/buyer/dashboard">
+					<button 
+					 className="btn btn-secondary"
+					 style={{"float":"right"}}
+					 >Back to dashboard</button>
+				</Link>
 				<h3>Select products</h3>
+				</div>
 				<ReactTable
 				  data={data}
 				  columns={[

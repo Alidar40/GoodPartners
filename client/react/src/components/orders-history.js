@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 
@@ -38,10 +39,24 @@ class OrdersHistory extends React.Component {
     }
 
     OrdersHistory(ordersHistory, columns) {
+        var toDashboard
+        if (this.isSupplier == "true") {
+    	    toDashboard = "/supplier/dashboard"
+        } else {
+	    toDashboard = "/buyer/dashboard"
+        }
+
+        var backBtn = <Link to={toDashboard}>
+	    <button 
+		    className="btn btn-secondary"
+		    style={{"float":"right"}}
+		    >Back to dashboard</button>
+        </Link> 
         if (ordersHistory === "ORDERS_HISTORY_IS_EMPTY") {
-            return <div></div>
+	    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You haven't made any orders</h3> <br/> {backBtn}</div>
         }
         return <div>
+	    {backBtn}
             <h2>My old orders</h2>
             <ReactTable
                 className="table table-hover simple-example table-full-width table-striped table-sortable"

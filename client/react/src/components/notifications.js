@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
@@ -41,12 +42,29 @@ class Notifications extends React.Component {
 
 	render() {
 	    if (this.state.notificationsFetched) {
+		    var toDashboard
+		    if (this.isSupplier == "true") {
+		    	toDashboard = "/supplier/dashboard"
+		    } else {
+		    	toDashboard = "/buyer/dashboard"
+		    }
+
+		    var backBtn = <Link to={toDashboard}>
+		    	    <button 
+				    className="btn btn-secondary"
+				    style={{"float":"right"}}
+				    >Back to dashboard</button>
+		    </Link> 
 	    	    if (this.state.notifications === "NOTIFICATIONS_ARE_EMPTY") {
-			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any notifications</h3></div>
+			    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>You don't have any notifications</h3> <br/> {backBtn}</div>
 		    }
 		    const data = this.state.notifications;
 		    return (
 		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
+				<div>
+				{backBtn}
+				<h3>Notifications</h3>
+				</div>
 				<ReactTable
 				  data={data}
 				  columns={[

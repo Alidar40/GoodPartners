@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
@@ -112,11 +113,33 @@ class OrderFinish extends React.Component {
 			      <textarea className="form-control" onChange={this.handleCommentInput} id="comment" rows="1"></textarea>
 			    </div>
 			    <br/>
-			    <button className="btn btn-success btn-lg" onClick={this.handleOrderClick}>Order</button>
+			    <button className="btn btn-success btn-lg" 
+			    	onClick={this.handleOrderClick}
+				style={{"marginRight":"5px"}}>
+				Order
+			    </button>
+			    <button className="btn btn-secondary btn-lg" 
+				onClick={() => this.props.history.goBack()}>
+				Back
+			     </button>
+			     <Link to="/buyer/dashboard">
+				<button 
+					className="btn btn-danger btn-lg"
+					style={{"float":"right"}}
+					>Cancel</button>
+		            </Link> 
 			    </div>
 			    );
 		  } else {
-		    return <div className="container jumbotron form-group" style={{ background: "white" }}><br /><h3>To order something you need to select something</h3></div>
+		    return <div className="container jumbotron form-group" 
+		    		style={{ background: "white" }}>
+				<br />
+				<h3>To order something you need to select something</h3>
+				<button className="btn btn-success" 
+					onClick={() => this.props.history.goBack()}>
+					Go back and select
+				</button>
+			   </div>
 	  	}
 	}
 }

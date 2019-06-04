@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ReactTable from "react-table";
 import "react-table/react-table.css";
@@ -47,9 +48,21 @@ class FindClients extends React.Component {
 	render() {
 	    if (this.state.clientsFetched) {
 		    const data = this.state.clients;
+		    var toDashboard
+		    if (this.isSupplier == "true") {
+		    	toDashboard = "/supplier/dashboard"
+		    } else {
+		    	toDashboard = "/buyer/dashboard"
+		    }
 		    return (
 		      	<div className="container jumbotron form-group" style={{ background: "white" }}>
 
+				<Link to={toDashboard}>
+					<button 
+						className="btn btn-secondary"
+						style={{"float":"right"}}
+						>Back to dashboard</button>
+				</Link> 
 				<h3>Invite new clients</h3>
 				<ReactTable
 				  data={data}
